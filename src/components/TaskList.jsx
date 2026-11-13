@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { Check, Crosshair, Plus, Trash2, ListTodo } from 'lucide-react'
-
-const uid = () =>
-  globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+import { MAX_ESTIMATE, uid } from '../lib/tasks'
 
 export default function TaskList({ tasks, setTasks, activeId, setActiveId }) {
   const [text, setText] = useState('')
+  const [estimate, setEstimate] = useState(1)
   const doneCount = tasks.filter((t) => t.done).length
 
   const add = (e) => {
     e.preventDefault()
     const value = text.trim()
     if (!value) return
-    const task = { id: uid(), text: value, done: false, pomos: 0 }
+    const task = { id: uid(), text: value, done: false, estimated: estimate, completed: 0 }
     setTasks((ts) => [...ts, task])
     if (!activeId) setActiveId(task.id)
     setText('')
+    setEstimate(1)
   }
 
   const toggle = (id) => {
@@ -46,22 +46,49 @@ export default function TaskList({ tasks, setTasks, activeId, setActiveId }) {
         </span>
       </header>
 
-      <form onSubmit={add} className="mb-3 flex gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="집중해서 끝낼 작업 추가…"
-          enterKeyHint="done"
-          className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)] focus:bg-white/[0.06]"
-        />
-        <button
-          type="submit"
-          aria-label="작업 추가"
-          className="accent-bg grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg transition active:scale-95 disabled:opacity-40"
-          disabled={!text.trim()}
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+      <form onSubmit={add} className="mb-3">
+        <div className="flex gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="집중해서 끝낼 작업 추가…"
+            enterKeyHint="done"
+            className="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)] focus:bg-white/[0.06]"
+          />
+          <button
+            type="submit"
+            aria-label="작업 추가"
+            className="accent-bg grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow-lg transition active:scale-95 disabled:opacity-40"
+            disabled={!text.trim()}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* 예상 뽀모도로 수: n번째 토마토를 탭해 1~8 선택 */}
+        <div className="mt-2.5 flex items-center gap-2 px-1">
+          <span className="shrink-0 text-xs text-white/45">예상</span>
+          <div className="flex flex-1 items-center" role="radiogroup" aria-label="예상 뽀모도로 수">
+            {Array.from({ length: MAX_ESTIMATE }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={estimate === n}
+                aria-label={`${n}개`}
+                onClick={() => setEstimate(n)}
+                className={`grid h-8 flex-1 place-items-center rounded-lg text-[15px] transition active:scale-90 ${
+                  n <= estimate ? 'opacity-100' : 'opacity-20 grayscale hover:opacity-40'
+                }`}
+              >
+                🍅
+              </button>
+            ))}
+          </div>
+          <span className="w-9 shrink-0 text-right text-xs font-semibold tabular-nums text-white/70">
+            {estimate}개
+          </span>
+        </div>
       </form>
 
       <ul className="-mx-1 flex-1 space-y-1.5 overflow-y-auto px-1 md:max-h-[calc(100dvh-30rem)] md:min-h-[8rem]">
@@ -74,11 +101,16 @@ export default function TaskList({ tasks, setTasks, activeId, setActiveId }) {
         )}
         {tasks.map((t) => {
           const active = t.id === activeId
+          const reached = t.completed >= t.estimated
           return (
             <li
               key={t.id}
               className={`group flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition ${
-                active ? 'accent-soft' : 'border-transparent bg-white/[0.025] hover:bg-white/[0.05]'
+                active
+                  ? 'accent-soft'
+                  : reached && !t.done
+                    ? 'border-[color-mix(in_srgb,var(--accent)_22%,transparent)] bg-[linear-gradient(90deg,color-mix(in_srgb,var(--accent)_9%,transparent),transparent_70%)]'
+                    : 'border-transparent bg-white/[0.025] hover:bg-white/[0.05]'
               }`}
             >
               <button
@@ -100,11 +132,14 @@ export default function TaskList({ tasks, setTasks, activeId, setActiveId }) {
                 <span className="line-clamp-2 break-words">{t.text}</span>
               </button>
 
-              {t.pomos > 0 && (
-                <span className="shrink-0 rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] tabular-nums text-white/55">
-                  🍅 {t.pomos}
-                </span>
-              )}
+              <span
+                title={reached ? '예상한 뽀모도로를 모두 채웠어요' : `완료 ${t.completed} / 예상 ${t.estimated}`}
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] tabular-nums transition ${
+                  reached ? 'accent-soft accent-text border font-semibold' : 'bg-white/[0.06] text-white/55'
+                } ${t.done ? 'opacity-50' : ''}`}
+              >
+                🍅 {t.completed}/{t.estimated}
+              </span>
 
               {!t.done && (
                 <button

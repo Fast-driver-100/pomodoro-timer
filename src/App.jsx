@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS, MODES, formatTime, usePomodoro } from './hooks/usePom
 import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
 import { playBell, unlockAudio } from './lib/audio'
+import { needsMigration, normalizeTask } from './lib/tasks'
 
 const THEMES = {
   focus: { a: '#f8734f', b: '#e5484d' }, // 차분한 오렌지 → 레드
@@ -19,7 +20,12 @@ export default function App() {
   const [settings, setSettings] = useLocalStorage('pomo.settings', DEFAULT_SETTINGS)
   const mergedSettings = useMemo(() => ({ ...DEFAULT_SETTINGS, ...settings }), [settings])
   const [today, setToday] = useLocalStorage('pomo.today', { date: todayKey(), count: 0, minutes: 0 })
-  const [tasks, setTasks] = useLocalStorage('pomo.tasks', [])
+  const [rawTasks, setTasks] = useLocalStorage('pomo.tasks', [])
+  // 이전 버전 작업 데이터({ pomos } 등) → { id, text, done, estimated, completed }
+  const tasks = useMemo(() => (Array.isArray(rawTasks) ? rawTasks : []).map(normalizeTask), [rawTasks])
+  useEffect(() => {
+    if (!Array.isArray(rawTasks) || rawTasks.some(needsMigration)) setTasks(tasks)
+  }, [rawTasks, tasks, setTasks])
   const [activeId, setActiveId] = useLocalStorage('pomo.activeTask', null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -39,7 +45,10 @@ export default function App() {
           count: (t.date === key ? t.count : 0) + 1,
           minutes: (t.date === key ? t.minutes || 0 : 0) + minutes,
         }))
-        if (activeId) setTasks((ts) => ts.map((t) => (t.id === activeId ? { ...t, pomos: (t.pomos || 0) + 1 } : t)))
+        if (activeId)
+          setTasks((ts) =>
+            ts.map(normalizeTask).map((t) => (t.id === activeId ? { ...t, completed: t.completed + 1 } : t)),
+          )
       }
     },
     [mergedSettings.bell, activeId, setToday, setTasks],
