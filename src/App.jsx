@@ -7,17 +7,22 @@ import SettingsModal from './components/SettingsModal'
 import SessionOverlay from './components/SessionOverlay'
 import NotifyBanner from './components/NotifyBanner'
 import JournalModal from './components/JournalModal'
+import StatsPanel from './components/StatsPanel'
 import { DEFAULT_SETTINGS, MODES, formatTime, usePomodoro } from './hooks/usePomodoro'
 import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
 import { playBell, unlockAudio } from './lib/audio'
 import { needsMigration, normalizeTask } from './lib/tasks'
+import { HISTORY_KEY, HISTORY_LIMIT, migrateLegacyToday, summarizeDay } from './lib/history'
 import { notifyPermission, requestNotifyPermission, showNotification } from './lib/notify'
 
 export default function App() {
   const [settings, setSettings] = useLocalStorage('pomo.settings', DEFAULT_SETTINGS)
   const mergedSettings = useMemo(() => ({ ...DEFAULT_SETTINGS, ...settings }), [settings])
-  const [today, setToday] = useLocalStorage('pomo.today', { date: todayKey(), count: 0, minutes: 0 })
+  // 이전 버전 pomo.today → pomo.history 1회 이관 (history 훅 초기화보다 먼저 실행되어야 함)
+  useState(migrateLegacyToday)
+  const [rawHistory, setHistory] = useLocalStorage(HISTORY_KEY, [])
+  const history = useMemo(() => (Array.isArray(rawHistory) ? rawHistory : []), [rawHistory])
   const [rawTasks, setTasks] = useLocalStorage('pomo.tasks', [])
   // 이전 버전 작업 데이터({ pomos } 등) → { id, text, done, estimated, completed }
   const tasks = useMemo(() => (Array.isArray(rawTasks) ? rawTasks : []).map(normalizeTask), [rawTasks])
@@ -57,10 +62,12 @@ export default function App() {
   // onSessionEnd는 타이머 훅보다 먼저 선언되므로 최신 값은 ref로 읽음 (선언 순서 TDZ 방지)
   const latest = useRef({})
 
-  // 날짜가 바뀌면 오늘 카운트 자동 초기화
-  const isToday = today.date === todayKey()
-  const todayCount = isToday ? today.count : 0
-  const todayMinutes = isToday ? today.minutes || 0 : 0
+  // 오늘 횟수/분은 history에서 파생 (날짜가 바뀌면 자연히 0부터)
+  const todayStr = todayKey()
+  const { count: todayCount, minutes: todayMinutes } = useMemo(
+    () => summarizeDay(history, todayStr),
+    [history, todayStr],
+  )
 
   const onSessionEnd = useCallback(
     (finishedMode, minutes) => {
@@ -87,19 +94,19 @@ export default function App() {
         showNotification(title, body)
       }
       if (finishedMode === 'focus') {
-        const key = todayKey()
-        setToday((t) => ({
-          date: key,
-          count: (t.date === key ? t.count : 0) + 1,
-          minutes: (t.date === key ? t.minutes || 0 : 0) + minutes,
-        }))
+        setHistory((h) =>
+          [
+            ...(Array.isArray(h) ? h : []),
+            { date: todayKey(), minutes, taskId: activeId ?? null, taskText: activeTask?.text ?? '' },
+          ].slice(-HISTORY_LIMIT),
+        )
         if (activeId)
           setTasks((ts) =>
             ts.map(normalizeTask).map((t) => (t.id === activeId ? { ...t, completed: t.completed + 1 } : t)),
           )
       }
     },
-    [mergedSettings, activeId, setToday, setTasks],
+    [mergedSettings, activeId, setHistory, setTasks],
   )
 
   const timer = usePomodoro(mergedSettings, onSessionEnd)
@@ -380,6 +387,10 @@ export default function App() {
           {/* 우측 패널 (모바일에서는 하단) */}
           <aside className="flex min-h-0 flex-col gap-5 md:gap-6">
             <TaskList tasks={tasks} setTasks={setTasks} activeId={activeId} setActiveId={setActiveId} />
+            {/* 데스크톱: 할 일 바로 아래 / 모바일: 맨 아래 */}
+            <div className="order-last md:order-none">
+              <StatsPanel history={history} tasks={tasks} />
+            </div>
             <SoundPanel />
           </aside>
         </main>
@@ -402,7 +413,7 @@ export default function App() {
         onSave={saveSettings}
         onClose={() => setSettingsOpen(false)}
         onResetToday={() => {
-          setToday({ date: todayKey(), count: 0, minutes: 0 })
+          setHistory((h) => (Array.isArray(h) ? h : []).filter((e) => e.date !== todayKey()))
           setSettingsOpen(false)
         }}
       />
