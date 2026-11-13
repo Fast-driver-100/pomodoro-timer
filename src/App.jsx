@@ -65,8 +65,8 @@ export default function App() {
   }, [timer.remaining, timer.mode, timer.running])
 
   // 키보드 단축키: Space(시작/일시정지), R(리셋), S(스킵), 1·2·3(모드)
+  // (keyRef.current는 아래 setModeMinutes 선언 이후에 갱신)
   const keyRef = useRef({})
-  keyRef.current = { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings }
   useEffect(() => {
     const onKey = (e) => {
       const { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings } = keyRef.current
@@ -117,6 +117,9 @@ export default function App() {
   useEffect(() => {
     if (timer.running) setEditing(false)
   }, [timer.running])
+
+  // 키보드 단축키 핸들러가 항상 최신 값을 보도록 (모든 의존 값 선언 이후에 할당해야 함)
+  keyRef.current = { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings }
 
   const saveSettings = (s) => {
     setSettings(s)
