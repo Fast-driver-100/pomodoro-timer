@@ -17,6 +17,13 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
 
     <title>Pomodoro</title>
+    <script>
+      // 첫 페인트 전에 저장된 모드를 적용해 색상 깜빡임 방지
+      try {
+        var m = JSON.parse(localStorage.getItem('pomo.mode'))
+        if (m === 'focus' || m === 'short' || m === 'long') document.documentElement.dataset.mode = m
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

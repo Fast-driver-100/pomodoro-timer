@@ -60,7 +60,21 @@ function Toggle({ label, checked, onChange }) {
   )
 }
 
-export default function SettingsModal({ open, settings, onSave, onClose, onResetToday }) {
+const NOTIFY_LABEL = {
+  granted: '켜짐',
+  denied: '차단됨 · 브라우저 설정에서 변경',
+  unsupported: '이 브라우저에서 미지원',
+}
+
+export default function SettingsModal({
+  open,
+  settings,
+  onSave,
+  onClose,
+  onResetToday,
+  notifyPermission,
+  onEnableNotify,
+}) {
   const [draft, setDraft] = useState(settings)
 
   useEffect(() => {
@@ -131,6 +145,20 @@ export default function SettingsModal({ open, settings, onSave, onClose, onReset
           <Toggle label="휴식 자동 시작" checked={draft.autoStartBreak} onChange={set('autoStartBreak')} />
           <Toggle label="집중 자동 시작" checked={draft.autoStartFocus} onChange={set('autoStartFocus')} />
           <Toggle label="종료 알림음" checked={draft.bell} onChange={set('bell')} />
+          <div className="flex items-center justify-between gap-3 py-2.5">
+            <span className="text-[15px] text-white/80">세션 종료 알림</span>
+            {notifyPermission === 'default' ? (
+              <button
+                type="button"
+                onClick={onEnableNotify}
+                className="accent-soft accent-text rounded-xl border px-3 py-1.5 text-sm font-semibold transition active:scale-95"
+              >
+                알림 켜기
+              </button>
+            ) : (
+              <span className="text-right text-xs text-white/45">{NOTIFY_LABEL[notifyPermission]}</span>
+            )}
+          </div>
         </div>
 
         <div className="mt-6 flex items-center gap-3">

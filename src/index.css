@@ -33,10 +33,53 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.theme-root {
+/* 모드별 테마 색: <html data-mode="focus|short|long"> 에 따라 전환 */
+html {
+  --focus-a: #f8734f; /* 집중: 차분한 오렌지 → 레드 */
+  --focus-b: #e5484d;
+  --short-a: #14b8a6; /* 짧은 휴식: 청록 */
+  --short-b: #06b6d4;
+  --long-a: #3b82f6; /* 긴 휴식: 파랑 */
+  --long-b: #6366f1;
+  --accent: var(--focus-a);
+  --accent-2: var(--focus-b);
   transition:
-    --accent 0.9s ease,
-    --accent-2 0.9s ease;
+    --accent 0.6s ease,
+    --accent-2 0.6s ease;
+}
+html[data-mode='short'] {
+  --accent: var(--short-a);
+  --accent-2: var(--short-b);
+}
+html[data-mode='long'] {
+  --accent: var(--long-a);
+  --accent-2: var(--long-b);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+@keyframes shrink-x {
+  to {
+    transform: scaleX(0);
+  }
+}
+.anim-fade {
+  animation: fade-in 0.25s ease-out both;
+}
+.anim-pop {
+  animation: pop-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.anim-shrink {
+  animation: shrink-x linear both;
 }
 
 .bg-glow {
@@ -90,7 +133,11 @@ input[type='number']::-webkit-outer-spin-button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .theme-root {
+  html {
     transition: none;
+  }
+  .anim-fade,
+  .anim-pop {
+    animation: none;
   }
 }

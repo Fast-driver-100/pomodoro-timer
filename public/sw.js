@@ -7,6 +7,17 @@ self.addEventListener('activate', (e) => {
       .then(() => self.clients.claim()),
   )
 })
+// 세션 종료 알림을 탭하면 열려 있는 앱 창으로 이동 (없으면 새로 열기)
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) if ('focus' in c) return c.focus()
+      return self.clients.openWindow('./')
+    }),
+  )
+})
+
 self.addEventListener('fetch', (e) => {
   const req = e.request
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return

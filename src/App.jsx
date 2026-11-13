@@ -4,17 +4,14 @@ import TimerRing from './components/TimerRing'
 import TaskList from './components/TaskList'
 import SoundPanel from './components/SoundPanel'
 import SettingsModal from './components/SettingsModal'
+import SessionOverlay from './components/SessionOverlay'
+import NotifyBanner from './components/NotifyBanner'
 import { DEFAULT_SETTINGS, MODES, formatTime, usePomodoro } from './hooks/usePomodoro'
 import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
 import { playBell, unlockAudio } from './lib/audio'
 import { needsMigration, normalizeTask } from './lib/tasks'
-
-const THEMES = {
-  focus: { a: '#f8734f', b: '#e5484d' }, // 차분한 오렌지 → 레드
-  short: { a: '#10b981', b: '#14b8a6' }, // 에메랄드
-  long: { a: '#3b82f6', b: '#10b981' }, // 블루 → 에메랄드
-}
+import { notifyPermission, requestNotifyPermission, showNotification } from './lib/notify'
 
 export default function App() {
   const [settings, setSettings] = useLocalStorage('pomo.settings', DEFAULT_SETTINGS)
@@ -28,6 +25,22 @@ export default function App() {
   }, [rawTasks, tasks, setTasks])
   const [activeId, setActiveId] = useLocalStorage('pomo.activeTask', null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [overlay, setOverlay] = useState(null)
+  const closeOverlay = useCallback(() => setOverlay(null), [])
+
+  // 알림 권한 안내 배너: 지원 환경 + 아직 묻지 않음 + 사용자가 닫지 않음
+  const [notifyPerm, setNotifyPerm] = useState(() => notifyPermission())
+  const [notifyPromptDismissed, setNotifyPromptDismissed] = useLocalStorage('pomo.notifyPromptDismissed', false)
+  const showNotifyBanner = notifyPerm === 'default' && !notifyPromptDismissed
+  const enableNotifications = useCallback(() => {
+    requestNotifyPermission().then((p) => {
+      setNotifyPerm(p)
+      if (p !== 'default') setNotifyPromptDismissed(true)
+    })
+  }, [setNotifyPromptDismissed])
+
+  // onSessionEnd는 타이머 훅보다 먼저 선언되므로 최신 값은 ref로 읽음 (선언 순서 TDZ 방지)
+  const latest = useRef({})
 
   // 날짜가 바뀌면 오늘 카운트 자동 초기화
   const isToday = today.date === todayKey()
@@ -38,6 +51,26 @@ export default function App() {
     (finishedMode, minutes) => {
       if (mergedSettings.bell) playBell(3)
       navigator.vibrate?.([200, 100, 200])
+
+      // 다음 모드 계산 (usePomodoro의 advance 규칙과 동일)
+      const { cycle, activeTask } = latest.current
+      const nextMode =
+        finishedMode === 'focus' ? (cycle + 1 >= mergedSettings.longInterval ? 'long' : 'short') : 'focus'
+      const nextMinutes = mergedSettings[nextMode]
+      const taskText = finishedMode === 'focus' ? activeTask?.text ?? '' : ''
+      const data = { id: Date.now(), finishedMode, minutes, nextMode, nextMinutes, taskText }
+      // 메모를 남길 수 있는 집중 종료 오버레이는 휴식 종료 오버레이로 덮어쓰지 않음
+      setOverlay((cur) => (cur?.finishedMode === 'focus' && finishedMode !== 'focus' ? cur : data))
+
+      // 화면을 보고 있지 않을 때만 시스템 알림 (보고 있으면 오버레이로 충분)
+      if (document.visibilityState !== 'visible' || !document.hasFocus()) {
+        const title = finishedMode === 'focus' ? `${minutes}분 집중 완료! 🍅` : '휴식 끝! 🔥'
+        const body =
+          finishedMode === 'focus'
+            ? `${nextMinutes}분 ${nextMode === 'long' ? '긴 휴식' : '휴식'}을 시작하세요.`
+            : `다시 ${nextMinutes}분 집중해볼까요?`
+        showNotification(title, body)
+      }
       if (finishedMode === 'focus') {
         const key = todayKey()
         setToday((t) => ({
@@ -51,13 +84,18 @@ export default function App() {
           )
       }
     },
-    [mergedSettings.bell, activeId, setToday, setTasks],
+    [mergedSettings, activeId, setToday, setTasks],
   )
 
   const timer = usePomodoro(mergedSettings, onSessionEnd)
   const wakeLockActive = useWakeLock(timer.running)
-  const theme = THEMES[timer.mode]
   const activeTask = tasks.find((t) => t.id === activeId && !t.done)
+  latest.current = { cycle: timer.cycle, activeTask }
+
+  // 모드에 따라 <html data-mode>를 바꿔 CSS 변수 테마 전환 (transition 0.6s)
+  useEffect(() => {
+    document.documentElement.dataset.mode = timer.mode
+  }, [timer.mode])
 
   // iOS 오디오 정책: '시작' 탭 시점에 AudioContext 활성화
   const toggleTimer = useCallback(() => {
@@ -78,8 +116,8 @@ export default function App() {
   const keyRef = useRef({})
   useEffect(() => {
     const onKey = (e) => {
-      const { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings } = keyRef.current
-      if (settingsOpen || e.metaKey || e.ctrlKey || e.altKey) return
+      const { toggleTimer, timer, settingsOpen, overlay, setModeMinutes, mergedSettings } = keyRef.current
+      if (settingsOpen || overlay || e.metaKey || e.ctrlKey || e.altKey) return
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return
       if (e.code === 'Space') {
@@ -128,7 +166,7 @@ export default function App() {
   }, [timer.running])
 
   // 키보드 단축키 핸들러가 항상 최신 값을 보도록 (모든 의존 값 선언 이후에 할당해야 함)
-  keyRef.current = { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings }
+  keyRef.current = { toggleTimer, timer, settingsOpen, overlay, setModeMinutes, mergedSettings }
 
   const saveSettings = (s) => {
     setSettings(s)
@@ -140,7 +178,7 @@ export default function App() {
   const filledDots = Math.min(timer.cycle, interval)
 
   return (
-    <div className="theme-root min-h-dvh" style={{ '--accent': theme.a, '--accent-2': theme.b }}>
+    <div className="min-h-dvh">
       <div className="bg-glow" aria-hidden />
 
       <div className="mx-auto flex min-h-dvh max-w-6xl flex-col pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:px-[max(2rem,env(safe-area-inset-left))]">
@@ -175,6 +213,10 @@ export default function App() {
             </button>
           </div>
         </header>
+
+        {showNotifyBanner && (
+          <NotifyBanner onEnable={enableNotifications} onDismiss={() => setNotifyPromptDismissed(true)} />
+        )}
 
         <main className="grid flex-1 gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-6 lg:gap-8">
           {/* 타이머 */}
@@ -320,8 +362,12 @@ export default function App() {
         </main>
       </div>
 
+      {overlay && <SessionOverlay data={overlay} onClose={closeOverlay} />}
+
       <SettingsModal
         open={settingsOpen}
+        notifyPermission={notifyPerm}
+        onEnableNotify={enableNotifications}
         settings={mergedSettings}
         onSave={saveSettings}
         onClose={() => setSettingsOpen(false)}
