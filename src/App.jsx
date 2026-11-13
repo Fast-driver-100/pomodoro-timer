@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { NotebookPen, Pause, Play, RotateCcw, Settings2, SkipForward, Sun, Timer } from 'lucide-react'
+import { Maximize2, NotebookPen, Pause, Play, RotateCcw, Settings2, SkipForward, Sun, Timer } from 'lucide-react'
 import TimerRing from './components/TimerRing'
 import TaskList from './components/TaskList'
 import SoundPanel from './components/SoundPanel'
@@ -8,6 +8,7 @@ import SessionOverlay from './components/SessionOverlay'
 import NotifyBanner from './components/NotifyBanner'
 import JournalModal from './components/JournalModal'
 import StatsPanel from './components/StatsPanel'
+import FocusView from './components/FocusView'
 import { DEFAULT_SETTINGS, MODES, formatTime, usePomodoro } from './hooks/usePomodoro'
 import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -36,6 +37,8 @@ export default function App() {
   const theme = useMemo(() => normalizeTheme(rawTheme), [rawTheme])
   useEffect(() => applyTheme(theme), [theme])
   const [overlay, setOverlay] = useState(null)
+  // 집중 모드(타이머 확대 화면) 표시 여부: 시작 시 켜지고, 종료·일시정지·리셋 시 꺼짐
+  const [zen, setZen] = useState(false)
   const [journalOpen, setJournalOpen] = useState(false)
   const [journal, setJournal] = useLocalStorage('pomo.journal', [])
   const JOURNAL_LIMIT = 500
@@ -77,6 +80,7 @@ export default function App() {
     (finishedMode, minutes) => {
       if (mergedSettings.bell) playBell(3)
       navigator.vibrate?.([200, 100, 200])
+      setZen(false)
 
       // 다음 모드 계산 (usePomodoro의 advance 규칙과 동일)
       const { cycle, activeTask } = latest.current
@@ -129,8 +133,19 @@ export default function App() {
     else {
       unlockAudio()
       timer.start()
+      setZen(true) // 시작하면 자동으로 집중 모드
     }
   }, [timer])
+
+  // 일시정지·리셋·스킵 등으로 타이머가 멈추면 원래 화면으로
+  useEffect(() => {
+    if (!timer.running) setZen(false)
+  }, [timer.running])
+
+  // 집중 모드 중에는 뒤의 페이지가 스크롤되지 않게
+  useEffect(() => {
+    document.documentElement.style.overflow = zen ? 'hidden' : ''
+  }, [zen])
 
   // 탭 제목에 실시간 남은 시간 표시
   useEffect(() => {
@@ -142,8 +157,13 @@ export default function App() {
   const keyRef = useRef({})
   useEffect(() => {
     const onKey = (e) => {
-      const { toggleTimer, timer, settingsOpen, overlay, journalOpen, setModeMinutes, mergedSettings } = keyRef.current
+      const { toggleTimer, timer, settingsOpen, overlay, journalOpen, zen, setModeMinutes, mergedSettings } =
+        keyRef.current
       if (settingsOpen || overlay || journalOpen || e.metaKey || e.ctrlKey || e.altKey) return
+      if (zen && e.key === 'Escape') {
+        setZen(false) // 타이머는 계속, 전체 화면으로
+        return
+      }
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return
       if (e.code === 'Space') {
@@ -192,7 +212,7 @@ export default function App() {
   }, [timer.running])
 
   // 키보드 단축키 핸들러가 항상 최신 값을 보도록 (모든 의존 값 선언 이후에 할당해야 함)
-  keyRef.current = { toggleTimer, timer, settingsOpen, overlay, journalOpen, setModeMinutes, mergedSettings }
+  keyRef.current = { toggleTimer, timer, settingsOpen, overlay, journalOpen, zen, setModeMinutes, mergedSettings }
 
   const saveSettings = (s) => {
     setSettings(s)
@@ -207,14 +227,24 @@ export default function App() {
     <div className="min-h-dvh">
       <div className="bg-glow" aria-hidden />
 
-      <div className="mx-auto flex min-h-dvh max-w-6xl flex-col pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:px-[max(2rem,env(safe-area-inset-left))]">
+      <div
+        inert={zen}
+        aria-hidden={zen}
+        className={`mx-auto flex min-h-dvh max-w-6xl flex-col transition-[opacity,transform,filter] duration-500 ease-out ${
+          zen ? 'pointer-events-none scale-[0.97] opacity-0 blur-sm' : ''
+        } pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:px-[max(2rem,env(safe-area-inset-left))]`}
+      >
         {/* 헤더 */}
-        <header className="flex items-center justify-between py-3 md:py-5">
+        <header className="app-header flex items-center justify-between py-3 md:py-5">
           <div className="flex items-center gap-2.5">
             <div className="accent-bg grid h-9 w-9 place-items-center rounded-xl shadow-lg">
               <Timer className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-semibold tracking-tight max-[380px]:hidden">Pomodoro</span>
+            <span
+              className={`text-lg font-semibold tracking-tight max-[380px]:hidden ${timer.running ? 'max-[430px]:hidden' : ''}`}
+            >
+              Pomodoro
+            </span>
           </div>
           <div className="flex items-center gap-2">
             {wakeLockActive && (
@@ -228,7 +258,7 @@ export default function App() {
             <span className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
               <span>🍅</span>
               <span className="font-semibold tabular-nums">{todayCount}</span>
-              <span className="text-faint">· {todayMinutes}분</span>
+              <span className={`text-faint ${timer.running ? 'max-[430px]:hidden' : ''}`}>· {todayMinutes}분</span>
             </span>
             <button
               onClick={() => setJournalOpen(true)}
@@ -245,6 +275,18 @@ export default function App() {
             >
               <Settings2 className="h-[18px] w-[18px]" />
             </button>
+            {/* 우측 상단: 타이머가 도는 동안 집중 모드로 다시 전환 */}
+            {timer.running && (
+              <button
+                onClick={() => setZen(true)}
+                aria-label="집중 모드"
+                title="집중 모드 (타이머 확대)"
+                className="accent-soft accent-text anim-pop flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition active:scale-95"
+              >
+                <Maximize2 className="h-4 w-4" />
+                <span className="hidden sm:inline">집중 모드</span>
+              </button>
+            )}
           </div>
         </header>
 
@@ -252,11 +294,12 @@ export default function App() {
           <NotifyBanner onEnable={enableNotifications} onDismiss={() => setNotifyPromptDismissed(true)} />
         )}
 
-        <main className="grid flex-1 gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-6 lg:gap-8">
+        <main className="app-main grid flex-1 gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-6 lg:gap-8">
           {/* 타이머 */}
-          <section className="glass flex flex-col items-center justify-between gap-6 rounded-[2rem] px-4 py-6 sm:px-8 md:py-8">
+          {/* md 이상: 오른쪽 열 길이에 맞춰 늘어나지 않도록 self-start + 스크롤 시 고정 */}
+          <section className="timer-card glass flex flex-col items-center gap-6 rounded-[2rem] px-4 py-6 sm:px-8 md:sticky md:top-6 md:self-start md:py-8">
             {/* 모드 탭 */}
-            <div className="flex w-full max-w-sm rounded-2xl bg-fg/[0.05] p-1">
+            <div className="mode-tabs flex w-full max-w-sm rounded-2xl bg-fg/[0.05] p-1">
               {Object.entries(MODES).map(([key, m]) => (
                 <button
                   key={key}
@@ -271,7 +314,7 @@ export default function App() {
             </div>
 
             {/* 현재 작업 */}
-            <div className="flex min-h-12 w-full max-w-md flex-col items-center text-center">
+            <div className="timer-task flex min-h-12 w-full max-w-md flex-col items-center text-center">
               <span className="text-[11px] font-medium tracking-[0.18em] text-faint uppercase">현재 작업</span>
               <span
                 className={`mt-1 line-clamp-2 px-2 text-base font-medium sm:text-lg ${
@@ -282,6 +325,7 @@ export default function App() {
               </span>
             </div>
 
+            <div className="timer-body flex flex-col items-center gap-6">
             <TimerRing progress={timer.progress}>
               <span className="accent-text text-sm font-semibold tracking-wide">{MODES[timer.mode].label}</span>
               {editing ? (
@@ -305,7 +349,7 @@ export default function App() {
                     onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
                     onFocus={(e) => e.target.select()}
                     aria-label={`${MODES[timer.mode].label} 시간(분)`}
-                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg outline-none md:text-[clamp(4rem,8vw,7rem)]"
+                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg outline-none md:text-[clamp(3rem,min(8vw,10dvh),7rem)]"
                   />
                   <span className="text-2xl font-medium text-muted">분</span>
                 </form>
@@ -316,7 +360,7 @@ export default function App() {
                   disabled={timer.running}
                   title={timer.running ? undefined : '탭하여 시간 수정'}
                   aria-label={timer.running ? undefined : `남은 시간 ${formatTime(timer.remaining)}, 탭하여 수정`}
-                  className="time-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg transition enabled:hover:bg-fg/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(4rem,8vw,7rem)]"
+                  className="time-digits timer-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg transition enabled:hover:bg-fg/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(3rem,min(8vw,10dvh),7rem)]"
                 >
                   {formatTime(timer.remaining)}
                 </button>
@@ -332,7 +376,7 @@ export default function App() {
                 ))}
               </div>
               <span
-                className={`mt-3 h-4 text-[11px] text-faint transition-opacity ${
+                className={`timer-hint mt-3 h-4 text-[11px] text-faint transition-opacity ${
                   !timer.running && !editing ? 'opacity-100' : 'opacity-0'
                 }`}
               >
@@ -341,7 +385,7 @@ export default function App() {
             </TimerRing>
 
             {/* 컨트롤 */}
-            <div className="flex items-center gap-6 sm:gap-8">
+            <div className="timer-controls flex items-center gap-6 sm:gap-8">
               <button
                 onClick={timer.reset}
                 aria-label="리셋"
@@ -352,7 +396,7 @@ export default function App() {
               <button
                 onClick={toggleTimer}
                 aria-label={timer.running ? '일시정지' : '시작'}
-                className="accent-bg grid h-20 w-20 place-items-center rounded-full text-white shadow-[0_12px_40px_-8px_color-mix(in_srgb,var(--accent)_70%,transparent)] transition active:scale-90"
+                className="play-btn accent-bg grid h-20 w-20 place-items-center rounded-full text-white shadow-[0_12px_40px_-8px_color-mix(in_srgb,var(--accent)_70%,transparent)] transition active:scale-90"
               >
                 {timer.running ? (
                   <Pause className="h-8 w-8" fill="currentColor" />
@@ -368,8 +412,9 @@ export default function App() {
                 <SkipForward className="h-[22px] w-[22px]" fill="currentColor" />
               </button>
             </div>
+            </div>
 
-            <p className="hidden gap-4 text-xs text-faint [@media(hover:hover)_and_(pointer:fine)]:flex">
+            <p className="timer-hints hidden gap-4 text-xs text-faint [@media(hover:hover)_and_(pointer:fine)]:flex">
               <span>
                 <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">Space</kbd> 시작/정지
               </span>
@@ -399,6 +444,16 @@ export default function App() {
           </aside>
         </main>
       </div>
+
+      <FocusView
+        visible={zen && timer.running}
+        remaining={timer.remaining}
+        progress={timer.progress}
+        modeLabel={MODES[timer.mode].label}
+        onPause={toggleTimer}
+        onStop={timer.reset}
+        onShowFull={() => setZen(false)}
+      />
 
       {overlay && <SessionOverlay data={overlay} onClose={closeOverlay} onSaveNote={saveNote} />}
 

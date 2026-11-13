@@ -215,3 +215,58 @@ input[type='number']::-webkit-outer-spin-button {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   가로 모드(높이가 낮은 화면: 폰 가로, 작은 태블릿 가로)
+   - 2단 배치 유지, 타이머 카드는 내용 높이만큼만 + 스크롤해도 상단 고정
+   - 링·숫자 크기를 화면 높이(dvh) 기준으로 제한하고, 컨트롤은 링 옆 세로 배치
+   (레이어 밖 CSS라 Tailwind 유틸리티보다 우선 적용됨)
+--------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-height: 540px) {
+  .app-header {
+    padding-block: 0.5rem;
+  }
+  .app-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .timer-card {
+    position: sticky;
+    top: max(0.5rem, env(safe-area-inset-top));
+    align-self: start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1.5rem;
+  }
+  .mode-tabs button {
+    padding-block: 0.4rem;
+    font-size: 0.8125rem;
+  }
+  .timer-task,
+  .timer-hints,
+  .timer-hint {
+    display: none;
+  }
+  .timer-body {
+    flex-direction: row;
+    gap: 1rem;
+  }
+  .timer-card .timer-ring {
+    width: max(8.5rem, min(28vw, calc(100dvh - 10rem)));
+  }
+  .timer-digits {
+    font-size: clamp(1.75rem, 11dvh, 3.5rem);
+  }
+  .timer-controls {
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  .timer-controls > button {
+    width: 3rem;
+    height: 3rem;
+  }
+  .timer-controls > .play-btn {
+    width: 4rem;
+    height: 4rem;
+  }
+}
