@@ -66,10 +66,10 @@ export default function App() {
 
   // 키보드 단축키: Space(시작/일시정지), R(리셋), S(스킵), 1·2·3(모드)
   const keyRef = useRef({})
-  keyRef.current = { toggleTimer, timer, settingsOpen }
+  keyRef.current = { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings }
   useEffect(() => {
     const onKey = (e) => {
-      const { toggleTimer, timer, settingsOpen } = keyRef.current
+      const { toggleTimer, timer, settingsOpen, setModeMinutes, mergedSettings } = keyRef.current
       if (settingsOpen || e.metaKey || e.ctrlKey || e.altKey) return
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return
@@ -81,10 +81,42 @@ export default function App() {
       else if (e.key === '1') timer.switchMode('focus')
       else if (e.key === '2') timer.switchMode('short')
       else if (e.key === '3') timer.switchMode('long')
+      else if ((e.code === 'ArrowUp' || e.code === 'ArrowDown') && !timer.running) {
+        e.preventDefault()
+        setModeMinutes(mergedSettings[timer.mode] + (e.code === 'ArrowUp' ? 1 : -1))
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+
+  // 타이머 숫자를 탭해서 현재 모드 시간을 바로 수정
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
+  const MAX_MIN = { focus: 180, short: 60, long: 90 }
+  const setModeMinutes = useCallback(
+    (m) => {
+      const mode = timer.mode
+      const v = Math.min(MAX_MIN[mode], Math.max(1, Math.round(Number(m))))
+      if (!Number.isFinite(v)) return
+      setSettings((s) => ({ ...DEFAULT_SETTINGS, ...s, [mode]: v }))
+      timer.reset()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [timer.mode, timer.reset, setSettings],
+  )
+  const beginEdit = () => {
+    if (timer.running) return
+    setEditValue(String(mergedSettings[timer.mode]))
+    setEditing(true)
+  }
+  const commitEdit = () => {
+    if (editValue.trim() !== '') setModeMinutes(editValue)
+    setEditing(false)
+  }
+  useEffect(() => {
+    if (timer.running) setEditing(false)
+  }, [timer.running])
 
   const saveSettings = (s) => {
     setSettings(s)
@@ -164,9 +196,43 @@ export default function App() {
 
             <TimerRing progress={timer.progress}>
               <span className="accent-text text-sm font-semibold tracking-wide">{MODES[timer.mode].label}</span>
-              <span className="time-digits my-1 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-white md:text-[clamp(4rem,8vw,7rem)]">
-                {formatTime(timer.remaining)}
-              </span>
+              {editing ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    commitEdit()
+                  }}
+                  className="my-1 flex items-baseline gap-2"
+                >
+                  <input
+                    autoFocus
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    enterKeyHint="done"
+                    maxLength={3}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value.replace(/\D/g, ''))}
+                    onBlur={commitEdit}
+                    onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
+                    onFocus={(e) => e.target.select()}
+                    aria-label={`${MODES[timer.mode].label} 시간(분)`}
+                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-white outline-none md:text-[clamp(4rem,8vw,7rem)]"
+                  />
+                  <span className="text-2xl font-medium text-white/50">분</span>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={beginEdit}
+                  disabled={timer.running}
+                  title={timer.running ? undefined : '탭하여 시간 수정'}
+                  aria-label={timer.running ? undefined : `남은 시간 ${formatTime(timer.remaining)}, 탭하여 수정`}
+                  className="time-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-white transition enabled:hover:bg-white/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(4rem,8vw,7rem)]"
+                >
+                  {formatTime(timer.remaining)}
+                </button>
+              )}
               <div className="mt-2 flex items-center gap-1.5" aria-label={`${filledDots}/${interval} 세트`}>
                 {Array.from({ length: interval }).map((_, i) => (
                   <span
@@ -177,6 +243,13 @@ export default function App() {
                   />
                 ))}
               </div>
+              <span
+                className={`mt-3 h-4 text-[11px] text-white/35 transition-opacity ${
+                  !timer.running && !editing ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                숫자를 탭해 시간 수정
+              </span>
             </TimerRing>
 
             {/* 컨트롤 */}
@@ -220,6 +293,9 @@ export default function App() {
               </span>
               <span>
                 <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">1·2·3</kbd> 모드
+              </span>
+              <span>
+                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">↑↓</kbd> ±1분
               </span>
             </p>
           </section>
