@@ -30,11 +30,11 @@ export default function SoundPanel() {
   return (
     <section className="glass rounded-3xl p-5 sm:p-6">
       <header className="mb-4 flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-white/90">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-fg/90">
           <Headphones className="h-[18px] w-[18px] accent-text" />
           집중 사운드
         </h2>
-        <span className="text-xs text-white/40">Web Audio 합성</span>
+        <span className="text-xs text-faint">Web Audio 합성</span>
       </header>
 
       <div className="space-y-2.5">
@@ -45,19 +45,19 @@ export default function SoundPanel() {
           return (
             <div
               key={s.id}
-              className={`rounded-2xl border p-3 transition ${on ? 'accent-soft' : 'border-white/5 bg-white/[0.025]'}`}
+              className={`rounded-2xl border p-3 transition ${on ? 'accent-soft' : 'border-fg/5 bg-fg/[0.025]'}`}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl transition ${
-                    on ? 'accent-bg text-white' : 'bg-white/[0.06] text-white/55'
+                    on ? 'accent-bg text-white' : 'bg-fg/[0.06] text-muted'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-medium text-white/90">{s.label}</div>
-                  <div className="text-xs text-white/40">{s.desc}</div>
+                  <div className="text-[15px] font-medium text-fg/90">{s.label}</div>
+                  <div className="text-xs text-faint">{s.desc}</div>
                 </div>
                 <button
                   role="switch"
@@ -65,7 +65,7 @@ export default function SoundPanel() {
                   aria-label={`${s.label} ${on ? '끄기' : '켜기'}`}
                   onClick={() => toggle(s.id)}
                   className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                    on ? 'accent-bg' : 'bg-white/15'
+                    on ? 'accent-bg' : 'bg-fg/15'
                   }`}
                 >
                   <span
@@ -76,7 +76,7 @@ export default function SoundPanel() {
                 </button>
               </div>
               <div className="mt-3 flex items-center gap-2.5 pl-1">
-                <Volume1 className="h-4 w-4 shrink-0 text-white/35" />
+                <Volume1 className="h-4 w-4 shrink-0 text-faint" />
                 <input
                   type="range"
                   min="0"
@@ -87,7 +87,7 @@ export default function SoundPanel() {
                   aria-label={`${s.label} 볼륨`}
                   className="h-1.5 w-full cursor-pointer"
                 />
-                <Volume2 className="h-4 w-4 shrink-0 text-white/35" />
+                <Volume2 className="h-4 w-4 shrink-0 text-faint" />
               </div>
             </div>
           )

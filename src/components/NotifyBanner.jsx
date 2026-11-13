@@ -11,9 +11,9 @@ export default function NotifyBanner({ onEnable, onDismiss }) {
       <div className="accent-soft grid h-9 w-9 shrink-0 place-items-center rounded-xl border">
         <Bell className="accent-text h-[18px] w-[18px]" />
       </div>
-      <p className="min-w-0 flex-1 text-sm leading-snug text-white/75">
-        세션이 끝나면 <span className="font-semibold text-white/90">알림</span>으로 알려드릴까요?
-        <span className="hidden text-white/45 sm:inline"> 다른 탭에 있어도 놓치지 않아요.</span>
+      <p className="min-w-0 flex-1 text-sm leading-snug text-fg/75">
+        세션이 끝나면 <span className="font-semibold text-fg/90">알림</span>으로 알려드릴까요?
+        <span className="hidden text-muted sm:inline"> 다른 탭에 있어도 놓치지 않아요.</span>
       </p>
       <button
         onClick={onEnable}
@@ -25,7 +25,7 @@ export default function NotifyBanner({ onEnable, onDismiss }) {
         onClick={onDismiss}
         aria-label="다음에"
         title="다음에"
-        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-white/40 transition hover:bg-white/10 hover:text-white/80"
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-faint transition hover:bg-fg/10 hover:text-fg/80"
       >
         <X className="h-4 w-4" />
       </button>

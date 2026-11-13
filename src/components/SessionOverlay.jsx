@@ -53,15 +53,15 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
         aria-live="assertive"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="glass anim-pop w-full max-w-sm rounded-[2rem] bg-[#101119]/85 px-6 pt-8 pb-6 text-center"
+        className="glass anim-pop w-full max-w-sm rounded-[2rem] bg-[var(--surface)] px-6 pt-8 pb-6 text-center"
       >
         <div className="accent-soft mx-auto grid h-16 w-16 place-items-center rounded-full border text-3xl">
           {emoji}
         </div>
         <h2 className="accent-text mt-5 text-2xl font-bold tracking-tight">{title}</h2>
-        <p className="mt-1.5 text-[15px] text-white/70">{subtitle}</p>
+        <p className="mt-1.5 text-[15px] text-fg/70">{subtitle}</p>
         {isFocusEnd && data.taskText && (
-          <p className="mx-auto mt-3 line-clamp-1 max-w-[90%] rounded-full bg-white/[0.06] px-3 py-1 text-xs text-white/50">
+          <p className="mx-auto mt-3 line-clamp-1 max-w-[90%] rounded-full bg-fg/[0.06] px-3 py-1 text-xs text-muted">
             🍅 {data.taskText}
           </p>
         )}
@@ -74,8 +74,8 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
               save()
             }}
           >
-            <label htmlFor="session-note" className="mb-1.5 block px-1 text-xs font-medium text-white/50">
-              이번 세션 어땠어요? <span className="text-white/35">(선택)</span>
+            <label htmlFor="session-note" className="mb-1.5 block px-1 text-xs font-medium text-muted">
+              이번 세션 어땠어요? <span className="text-faint">(선택)</span>
             </label>
             <input
               id="session-note"
@@ -86,13 +86,13 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
               maxLength={200}
               enterKeyHint="done"
               placeholder="예: 초반에 집중이 잘 됐어요"
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)]"
+              className="w-full rounded-2xl border border-fg/10 bg-fg/[0.05] px-4 py-3 text-base text-fg placeholder:text-faint outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)]"
             />
             <div className="mt-3 flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-2xl bg-white/[0.06] py-3 text-[15px] font-medium text-white/70 transition hover:bg-white/10 active:scale-95"
+                className="flex-1 rounded-2xl bg-fg/[0.06] py-3 text-[15px] font-medium text-fg/70 transition hover:bg-fg/10 active:scale-95"
               >
                 건너뛰기
               </button>
@@ -106,7 +106,7 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
             </div>
           </form>
         ) : (
-          <div className="mx-auto mt-6 h-1 w-24 overflow-hidden rounded-full bg-white/10">
+          <div className="mx-auto mt-6 h-1 w-24 overflow-hidden rounded-full bg-fg/10">
             <div
               key={data.id}
               className="accent-bg anim-shrink h-full origin-left"

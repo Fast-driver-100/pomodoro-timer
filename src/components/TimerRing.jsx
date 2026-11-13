@@ -20,11 +20,11 @@ export default function TimerRing({ progress, children }) {
           cy={SIZE / 2}
           r={R + STROKE + 6}
           fill="none"
-          stroke="rgb(255 255 255 / 0.07)"
+          style={{ stroke: 'color-mix(in srgb, var(--fg) 9%, transparent)' }}
           strokeWidth="2"
           strokeDasharray="1.5 10.5"
         />
-        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke="rgb(255 255 255 / 0.06)" strokeWidth={STROKE} />
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" strokeWidth={STROKE} style={{ stroke: 'color-mix(in srgb, var(--fg) 7%, transparent)' }} />
         <circle
           cx={SIZE / 2}
           cy={SIZE / 2}

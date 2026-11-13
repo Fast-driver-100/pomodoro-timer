@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#07080c" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="description" content="집중 타이머, 할 일, 백색소음을 한 곳에 — 미니멀 뽀모도로 앱" />
 
     <!-- PWA / iOS 홈 화면 앱 -->
@@ -18,10 +18,21 @@
 
     <title>Pomodoro</title>
     <script>
-      // 첫 페인트 전에 저장된 모드를 적용해 색상 깜빡임 방지
+      // 첫 페인트 전에 저장된 모드/테마를 적용해 색상 깜빡임 방지
       try {
+        var r = document.documentElement
         var m = JSON.parse(localStorage.getItem('pomo.mode'))
-        if (m === 'focus' || m === 'short' || m === 'long') document.documentElement.dataset.mode = m
+        if (m === 'focus' || m === 'short' || m === 'long') r.dataset.mode = m
+        var t = JSON.parse(localStorage.getItem('pomo.theme')) || {}
+        r.dataset.theme = t.mode === 'light' ? 'light' : 'dark'
+        if (['orange', 'mint', 'purple', 'rose'].indexOf(t.accent) >= 0) r.dataset.accent = t.accent
+        if (t.mode === 'light') {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f2f2f5')
+          // iOS 홈 화면 앱: 밝은 배경에서는 상태바 글자를 검정으로 (앱 재실행 시 반영)
+          document
+            .querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+            .setAttribute('content', 'default')
+        }
       } catch (e) {}
     </script>
   </head>

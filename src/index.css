@@ -1,5 +1,12 @@
 @import 'tailwindcss';
 
+/* 테마 토큰 → Tailwind 유틸리티 (text-fg/80, bg-fg/[0.04], text-muted, text-faint …) */
+@theme inline {
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+}
+
 /* 포인트 컬러를 타입이 있는 커스텀 프로퍼티로 등록 → 모드 전환 시 색상 자체가 부드럽게 보간됩니다 */
 @property --accent {
   syntax: '<color>';
@@ -14,12 +21,40 @@
 
 :root {
   color-scheme: dark;
+  /* 다크(기본) — muted/faint는 투명도 대신 단색으로 지정해 대비를 보장 */
+  --bg: #07080c;
+  --fg: #ececf1;
+  --muted: #a3a4ad;
+  --faint: #7f808a;
+  --surface: rgb(16 17 25 / 0.92);
+  --glass-bg: rgb(255 255 255 / 0.035);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-hi: rgb(255 255 255 / 0.05);
+  --glass-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
+  --glow-strength: 22%;
+  --accent-ink: var(--accent);
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f2f2f5;
+  --fg: #16171d;
+  --muted: #4c4e5b;
+  --faint: #63656f;
+  --surface: rgb(255 255 255 / 0.95);
+  --glass-bg: rgb(255 255 255 / 0.62);
+  --glass-border: rgb(22 23 29 / 0.08);
+  --glass-hi: rgb(255 255 255 / 0.8);
+  --glass-shadow: 0 18px 44px -22px rgb(30 32 48 / 0.28);
+  --glow-strength: 16%;
+  /* 밝은 배경 위 포인트 텍스트는 어둡게 섞어 대비 확보 */
+  --accent-ink: color-mix(in oklab, var(--accent) 62%, #000);
 }
 
 html,
 body {
-  background: #07080c;
-  color: #e9e9ef;
+  background: var(--bg);
+  color: var(--fg);
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
@@ -35,8 +70,17 @@ body {
 
 /* 모드별 테마 색: <html data-mode="focus|short|long"> 에 따라 전환 */
 html {
-  --focus-a: #f8734f; /* 집중: 차분한 오렌지 → 레드 */
-  --focus-b: #e5484d;
+  /* 집중 모드 포인트 색상 팔레트 (<html data-accent>로 선택) */
+  --orange-a: #f8734f;
+  --orange-b: #e5484d;
+  --mint-a: #3ddc97;
+  --mint-b: #16a37a;
+  --purple-a: #a78bfa;
+  --purple-b: #7c3aed;
+  --rose-a: #fb7185;
+  --rose-b: #e11d48;
+  --focus-a: var(--orange-a); /* 집중: 기본 오렌지 */
+  --focus-b: var(--orange-b);
   --short-a: #14b8a6; /* 짧은 휴식: 청록 */
   --short-b: #06b6d4;
   --long-a: #3b82f6; /* 긴 휴식: 파랑 */
@@ -46,6 +90,18 @@ html {
   transition:
     --accent 0.6s ease,
     --accent-2 0.6s ease;
+}
+html[data-accent='mint'] {
+  --focus-a: var(--mint-a);
+  --focus-b: var(--mint-b);
+}
+html[data-accent='purple'] {
+  --focus-a: var(--purple-a);
+  --focus-b: var(--purple-b);
+}
+html[data-accent='rose'] {
+  --focus-a: var(--rose-a);
+  --focus-b: var(--rose-b);
 }
 html[data-mode='short'] {
   --accent: var(--short-a);
@@ -88,23 +144,41 @@ html[data-mode='long'] {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(55% 45% at 15% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
-    radial-gradient(45% 40% at 95% 100%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 70%),
-    #07080c;
+    radial-gradient(55% 45% at 15% 0%, color-mix(in srgb, var(--accent) var(--glow-strength), transparent), transparent 70%),
+    radial-gradient(
+      45% 40% at 95% 100%,
+      color-mix(in srgb, var(--accent-2) calc(var(--glow-strength) * 0.75), transparent),
+      transparent 70%
+    ),
+    var(--bg);
+  transition: background-color 0.6s ease;
 }
 
 .glass {
-  background: rgb(255 255 255 / 0.035);
-  border: 1px solid rgb(255 255 255 / 0.08);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
   backdrop-filter: blur(24px) saturate(140%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 24px 60px -24px rgb(0 0 0 / 0.7);
+    inset 0 1px 0 var(--glass-hi),
+    var(--glass-shadow);
 }
 
 .accent-text {
-  color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.swatch-orange {
+  background: linear-gradient(135deg, var(--orange-a), var(--orange-b));
+}
+.swatch-mint {
+  background: linear-gradient(135deg, var(--mint-a), var(--mint-b));
+}
+.swatch-purple {
+  background: linear-gradient(135deg, var(--purple-a), var(--purple-b));
+}
+.swatch-rose {
+  background: linear-gradient(135deg, var(--rose-a), var(--rose-b));
 }
 
 .accent-bg {

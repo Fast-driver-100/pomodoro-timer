@@ -13,6 +13,7 @@ import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
 import { playBell, unlockAudio } from './lib/audio'
 import { needsMigration, normalizeTask } from './lib/tasks'
+import { DEFAULT_THEME, THEME_KEY, applyTheme, normalizeTheme } from './lib/theme'
 import { HISTORY_KEY, HISTORY_LIMIT, migrateLegacyToday, summarizeDay } from './lib/history'
 import { notifyPermission, requestNotifyPermission, showNotification } from './lib/notify'
 
@@ -31,6 +32,9 @@ export default function App() {
   }, [rawTasks, tasks, setTasks])
   const [activeId, setActiveId] = useLocalStorage('pomo.activeTask', null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [rawTheme, setTheme] = useLocalStorage(THEME_KEY, DEFAULT_THEME)
+  const theme = useMemo(() => normalizeTheme(rawTheme), [rawTheme])
+  useEffect(() => applyTheme(theme), [theme])
   const [overlay, setOverlay] = useState(null)
   const [journalOpen, setJournalOpen] = useState(false)
   const [journal, setJournal] = useLocalStorage('pomo.journal', [])
@@ -215,7 +219,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             {wakeLockActive && (
               <span
-                className="hidden items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1.5 text-xs text-white/55 sm:flex"
+                className="hidden items-center gap-1 rounded-full bg-fg/[0.06] px-2.5 py-1.5 text-xs text-muted sm:flex"
                 title="타이머 작동 중 화면 꺼짐 방지"
               >
                 <Sun className="h-3.5 w-3.5" /> 화면 유지
@@ -224,20 +228,20 @@ export default function App() {
             <span className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
               <span>🍅</span>
               <span className="font-semibold tabular-nums">{todayCount}</span>
-              <span className="text-white/40">· {todayMinutes}분</span>
+              <span className="text-faint">· {todayMinutes}분</span>
             </span>
             <button
               onClick={() => setJournalOpen(true)}
               aria-label="일지"
               title="집중 일지"
-              className="glass grid h-10 w-10 place-items-center rounded-full text-white/70 transition hover:text-white active:scale-95"
+              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/70 transition hover:text-fg active:scale-95"
             >
               <NotebookPen className="h-[18px] w-[18px]" />
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
               aria-label="설정"
-              className="glass grid h-10 w-10 place-items-center rounded-full text-white/70 transition hover:text-white active:scale-95"
+              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/70 transition hover:text-fg active:scale-95"
             >
               <Settings2 className="h-[18px] w-[18px]" />
             </button>
@@ -252,13 +256,13 @@ export default function App() {
           {/* 타이머 */}
           <section className="glass flex flex-col items-center justify-between gap-6 rounded-[2rem] px-4 py-6 sm:px-8 md:py-8">
             {/* 모드 탭 */}
-            <div className="flex w-full max-w-sm rounded-2xl bg-white/[0.05] p-1">
+            <div className="flex w-full max-w-sm rounded-2xl bg-fg/[0.05] p-1">
               {Object.entries(MODES).map(([key, m]) => (
                 <button
                   key={key}
                   onClick={() => timer.switchMode(key)}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition-all duration-300 ${
-                    timer.mode === key ? 'accent-bg text-white shadow-lg' : 'text-white/50 hover:text-white/80'
+                    timer.mode === key ? 'accent-bg text-white shadow-lg' : 'text-muted hover:text-fg/80'
                   }`}
                 >
                   {m.label}
@@ -268,10 +272,10 @@ export default function App() {
 
             {/* 현재 작업 */}
             <div className="flex min-h-12 w-full max-w-md flex-col items-center text-center">
-              <span className="text-[11px] font-medium tracking-[0.18em] text-white/35 uppercase">현재 작업</span>
+              <span className="text-[11px] font-medium tracking-[0.18em] text-faint uppercase">현재 작업</span>
               <span
                 className={`mt-1 line-clamp-2 px-2 text-base font-medium sm:text-lg ${
-                  activeTask ? 'text-white/90' : 'text-white/30'
+                  activeTask ? 'text-fg/90' : 'text-faint'
                 }`}
               >
                 {activeTask ? activeTask.text : '할 일 목록에서 작업을 선택하세요'}
@@ -301,9 +305,9 @@ export default function App() {
                     onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
                     onFocus={(e) => e.target.select()}
                     aria-label={`${MODES[timer.mode].label} 시간(분)`}
-                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-white outline-none md:text-[clamp(4rem,8vw,7rem)]"
+                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg outline-none md:text-[clamp(4rem,8vw,7rem)]"
                   />
-                  <span className="text-2xl font-medium text-white/50">분</span>
+                  <span className="text-2xl font-medium text-muted">분</span>
                 </form>
               ) : (
                 <button
@@ -312,7 +316,7 @@ export default function App() {
                   disabled={timer.running}
                   title={timer.running ? undefined : '탭하여 시간 수정'}
                   aria-label={timer.running ? undefined : `남은 시간 ${formatTime(timer.remaining)}, 탭하여 수정`}
-                  className="time-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-white transition enabled:hover:bg-white/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(4rem,8vw,7rem)]"
+                  className="time-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg transition enabled:hover:bg-fg/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(4rem,8vw,7rem)]"
                 >
                   {formatTime(timer.remaining)}
                 </button>
@@ -322,13 +326,13 @@ export default function App() {
                   <span
                     key={i}
                     className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i < filledDots ? 'accent-bg w-4' : 'w-1.5 bg-white/20'
+                      i < filledDots ? 'accent-bg w-4' : 'w-1.5 bg-fg/20'
                     }`}
                   />
                 ))}
               </div>
               <span
-                className={`mt-3 h-4 text-[11px] text-white/35 transition-opacity ${
+                className={`mt-3 h-4 text-[11px] text-faint transition-opacity ${
                   !timer.running && !editing ? 'opacity-100' : 'opacity-0'
                 }`}
               >
@@ -341,7 +345,7 @@ export default function App() {
               <button
                 onClick={timer.reset}
                 aria-label="리셋"
-                className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.07] text-white/70 transition hover:bg-white/[0.12] hover:text-white active:scale-90"
+                className="grid h-14 w-14 place-items-center rounded-full bg-fg/[0.07] text-fg/70 transition hover:bg-fg/[0.12] hover:text-fg active:scale-90"
               >
                 <RotateCcw className="h-[22px] w-[22px]" />
               </button>
@@ -359,27 +363,27 @@ export default function App() {
               <button
                 onClick={timer.skip}
                 aria-label="다음 세션으로 건너뛰기"
-                className="grid h-14 w-14 place-items-center rounded-full bg-white/[0.07] text-white/70 transition hover:bg-white/[0.12] hover:text-white active:scale-90"
+                className="grid h-14 w-14 place-items-center rounded-full bg-fg/[0.07] text-fg/70 transition hover:bg-fg/[0.12] hover:text-fg active:scale-90"
               >
                 <SkipForward className="h-[22px] w-[22px]" fill="currentColor" />
               </button>
             </div>
 
-            <p className="hidden gap-4 text-xs text-white/30 [@media(hover:hover)_and_(pointer:fine)]:flex">
+            <p className="hidden gap-4 text-xs text-faint [@media(hover:hover)_and_(pointer:fine)]:flex">
               <span>
-                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">Space</kbd> 시작/정지
+                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">Space</kbd> 시작/정지
               </span>
               <span>
-                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">R</kbd> 리셋
+                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">R</kbd> 리셋
               </span>
               <span>
-                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">S</kbd> 스킵
+                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">S</kbd> 스킵
               </span>
               <span>
-                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">1·2·3</kbd> 모드
+                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">1·2·3</kbd> 모드
               </span>
               <span>
-                <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-sans">↑↓</kbd> ±1분
+                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">↑↓</kbd> ±1분
               </span>
             </p>
           </section>
@@ -407,6 +411,8 @@ export default function App() {
 
       <SettingsModal
         open={settingsOpen}
+        theme={theme}
+        onThemeChange={(patch) => setTheme((t) => normalizeTheme({ ...normalizeTheme(t), ...patch }))}
         notifyPermission={notifyPerm}
         onEnableNotify={enableNotifications}
         settings={mergedSettings}
