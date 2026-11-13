@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MODES } from '../hooks/usePomodoro'
 
 export const BREAK_OVERLAY_MS = 2600
@@ -6,10 +6,20 @@ export const BREAK_OVERLAY_MS = 2600
 /**
  * 세션 종료 직후 중앙 전환 오버레이.
  * - 휴식 종료: 약 2.6초 후 자동으로 사라짐
- * - 집중 종료: 자동으로 닫히지 않음 (확인 버튼 / 바깥 탭 / Esc)
+ * - 집중 종료: 메모를 쓸 수 있도록 자동으로 닫히지 않음 (저장·건너뛰기 / 바깥 탭 / Esc)
  */
-export default function SessionOverlay({ data, onClose }) {
+const prefersFinePointer = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches
+
+export default function SessionOverlay({ data, onClose, onSaveNote }) {
   const isFocusEnd = data.finishedMode === 'focus'
+  const [note, setNote] = useState('')
+
+  const save = () => {
+    const text = note.trim()
+    if (text) onSaveNote?.(text, data)
+    onClose()
+  }
 
   useEffect(() => {
     if (isFocusEnd) return
@@ -34,7 +44,8 @@ export default function SessionOverlay({ data, onClose }) {
   return (
     <div
       className="anim-fade fixed inset-0 z-40 grid place-items-center bg-black/55 p-5 backdrop-blur-sm"
-      onClick={onClose}
+      // 집중 종료: 바깥 탭 시 작성 중인 메모는 저장하고 닫음 (Esc는 저장 없이 닫기)
+      onClick={isFocusEnd ? save : onClose}
     >
       <div
         role="dialog"
@@ -56,13 +67,44 @@ export default function SessionOverlay({ data, onClose }) {
         )}
 
         {isFocusEnd ? (
-          <button
-            autoFocus
-            onClick={onClose}
-            className="accent-bg mt-6 w-full rounded-2xl py-3 text-[15px] font-semibold text-white shadow-lg transition active:scale-95"
+          <form
+            className="mt-6 text-left"
+            onSubmit={(e) => {
+              e.preventDefault()
+              save()
+            }}
           >
-            확인
-          </button>
+            <label htmlFor="session-note" className="mb-1.5 block px-1 text-xs font-medium text-white/50">
+              이번 세션 어땠어요? <span className="text-white/35">(선택)</span>
+            </label>
+            <input
+              id="session-note"
+              // 데스크톱에서만 자동 포커스 (모바일은 키보드가 갑자기 올라오지 않게)
+              autoFocus={prefersFinePointer()}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={200}
+              enterKeyHint="done"
+              placeholder="예: 초반에 집중이 잘 됐어요"
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 text-base text-white placeholder:text-white/30 outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)]"
+            />
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-2xl bg-white/[0.06] py-3 text-[15px] font-medium text-white/70 transition hover:bg-white/10 active:scale-95"
+              >
+                건너뛰기
+              </button>
+              <button
+                type="submit"
+                disabled={!note.trim()}
+                className="accent-bg flex-1 rounded-2xl py-3 text-[15px] font-semibold text-white shadow-lg transition active:scale-95 disabled:opacity-40"
+              >
+                저장
+              </button>
+            </div>
+          </form>
         ) : (
           <div className="mx-auto mt-6 h-1 w-24 overflow-hidden rounded-full bg-white/10">
             <div

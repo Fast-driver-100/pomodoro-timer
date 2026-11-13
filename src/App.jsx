@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pause, Play, RotateCcw, Settings2, SkipForward, Sun, Timer } from 'lucide-react'
+import { NotebookPen, Pause, Play, RotateCcw, Settings2, SkipForward, Sun, Timer } from 'lucide-react'
 import TimerRing from './components/TimerRing'
 import TaskList from './components/TaskList'
 import SoundPanel from './components/SoundPanel'
 import SettingsModal from './components/SettingsModal'
 import SessionOverlay from './components/SessionOverlay'
 import NotifyBanner from './components/NotifyBanner'
+import JournalModal from './components/JournalModal'
 import { DEFAULT_SETTINGS, MODES, formatTime, usePomodoro } from './hooks/usePomodoro'
 import { todayKey, useLocalStorage } from './hooks/useLocalStorage'
 import { useWakeLock } from './hooks/useWakeLock'
@@ -26,6 +27,20 @@ export default function App() {
   const [activeId, setActiveId] = useLocalStorage('pomo.activeTask', null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [overlay, setOverlay] = useState(null)
+  const [journalOpen, setJournalOpen] = useState(false)
+  const [journal, setJournal] = useLocalStorage('pomo.journal', [])
+  const JOURNAL_LIMIT = 500
+  const saveNote = useCallback(
+    (note, d) =>
+      setJournal((j) =>
+        [
+          ...(Array.isArray(j) ? j : []),
+          { date: new Date(d.id).toISOString(), taskText: d.taskText || '', minutes: d.minutes, note },
+        ].slice(-JOURNAL_LIMIT),
+      ),
+    [setJournal],
+  )
+  const deleteNote = useCallback((date) => setJournal((j) => j.filter((e) => e.date !== date)), [setJournal])
   const closeOverlay = useCallback(() => setOverlay(null), [])
 
   // 알림 권한 안내 배너: 지원 환경 + 아직 묻지 않음 + 사용자가 닫지 않음
@@ -116,8 +131,8 @@ export default function App() {
   const keyRef = useRef({})
   useEffect(() => {
     const onKey = (e) => {
-      const { toggleTimer, timer, settingsOpen, overlay, setModeMinutes, mergedSettings } = keyRef.current
-      if (settingsOpen || overlay || e.metaKey || e.ctrlKey || e.altKey) return
+      const { toggleTimer, timer, settingsOpen, overlay, journalOpen, setModeMinutes, mergedSettings } = keyRef.current
+      if (settingsOpen || overlay || journalOpen || e.metaKey || e.ctrlKey || e.altKey) return
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return
       if (e.code === 'Space') {
@@ -166,7 +181,7 @@ export default function App() {
   }, [timer.running])
 
   // 키보드 단축키 핸들러가 항상 최신 값을 보도록 (모든 의존 값 선언 이후에 할당해야 함)
-  keyRef.current = { toggleTimer, timer, settingsOpen, overlay, setModeMinutes, mergedSettings }
+  keyRef.current = { toggleTimer, timer, settingsOpen, overlay, journalOpen, setModeMinutes, mergedSettings }
 
   const saveSettings = (s) => {
     setSettings(s)
@@ -188,7 +203,7 @@ export default function App() {
             <div className="accent-bg grid h-9 w-9 place-items-center rounded-xl shadow-lg">
               <Timer className="h-5 w-5 text-white" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">Pomodoro</span>
+            <span className="text-lg font-semibold tracking-tight max-[380px]:hidden">Pomodoro</span>
           </div>
           <div className="flex items-center gap-2">
             {wakeLockActive && (
@@ -204,6 +219,14 @@ export default function App() {
               <span className="font-semibold tabular-nums">{todayCount}</span>
               <span className="text-white/40">· {todayMinutes}분</span>
             </span>
+            <button
+              onClick={() => setJournalOpen(true)}
+              aria-label="일지"
+              title="집중 일지"
+              className="glass grid h-10 w-10 place-items-center rounded-full text-white/70 transition hover:text-white active:scale-95"
+            >
+              <NotebookPen className="h-[18px] w-[18px]" />
+            </button>
             <button
               onClick={() => setSettingsOpen(true)}
               aria-label="설정"
@@ -362,7 +385,14 @@ export default function App() {
         </main>
       </div>
 
-      {overlay && <SessionOverlay data={overlay} onClose={closeOverlay} />}
+      {overlay && <SessionOverlay data={overlay} onClose={closeOverlay} onSaveNote={saveNote} />}
+
+      <JournalModal
+        open={journalOpen}
+        entries={Array.isArray(journal) ? journal : []}
+        onClose={() => setJournalOpen(false)}
+        onDelete={deleteNote}
+      />
 
       <SettingsModal
         open={settingsOpen}
