@@ -43,7 +43,7 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
 
   return (
     <div
-      className="anim-fade fixed inset-0 z-40 grid place-items-center bg-black/55 p-5 backdrop-blur-sm"
+      className="scrim anim-fade fixed inset-0 z-40 grid place-items-center p-5"
       // 집중 종료: 바깥 탭 시 작성 중인 메모는 저장하고 닫음 (Esc는 저장 없이 닫기)
       onClick={isFocusEnd ? save : onClose}
     >
@@ -53,15 +53,16 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
         aria-live="assertive"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="glass anim-pop w-full max-w-sm rounded-[2rem] bg-[var(--surface)] px-6 pt-8 pb-6 text-center"
+        className="sheet anim-pop w-full max-w-sm rounded-[2.25rem] px-6 pt-9 pb-6 text-center"
       >
-        <div className="accent-soft mx-auto grid h-16 w-16 place-items-center rounded-full border text-3xl">
-          {emoji}
+        <div className="relative mx-auto grid h-20 w-20 place-items-center">
+          <span aria-hidden className="absolute inset-0 rounded-full bg-[var(--accent)] opacity-35 blur-2xl" />
+          <span className="accent-soft relative grid h-16 w-16 place-items-center rounded-full text-3xl">{emoji}</span>
         </div>
-        <h2 className="accent-text mt-5 text-2xl font-bold tracking-tight">{title}</h2>
-        <p className="mt-1.5 text-[15px] text-fg/70">{subtitle}</p>
+        <h2 className="mt-5 text-[26px] font-bold tracking-[-0.03em]">{title}</h2>
+        <p className="mt-1.5 text-[15px] text-muted">{subtitle}</p>
         {isFocusEnd && data.taskText && (
-          <p className="mx-auto mt-3 line-clamp-1 max-w-[90%] rounded-full bg-fg/[0.06] px-3 py-1 text-xs text-muted">
+          <p className="mx-auto mt-4 line-clamp-1 max-w-[90%] rounded-full bg-fg/[0.06] px-3 py-1 text-xs text-muted">
             🍅 {data.taskText}
           </p>
         )}
@@ -74,7 +75,7 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
               save()
             }}
           >
-            <label htmlFor="session-note" className="mb-1.5 block px-1 text-xs font-medium text-muted">
+            <label htmlFor="session-note" className="mb-2 block px-4 text-[13px] text-muted">
               이번 세션 어땠어요? <span className="text-faint">(선택)</span>
             </label>
             <input
@@ -86,27 +87,27 @@ export default function SessionOverlay({ data, onClose, onSaveNote }) {
               maxLength={200}
               enterKeyHint="done"
               placeholder="예: 초반에 집중이 잘 됐어요"
-              className="w-full rounded-2xl border border-fg/10 bg-fg/[0.05] px-4 py-3 text-base text-fg placeholder:text-faint outline-none transition focus:border-[color-mix(in_srgb,var(--accent)_60%,transparent)]"
+              className="h-12 w-full rounded-full bg-fg/[0.06] px-5 text-base text-fg shadow-[inset_0_0_0_1px_var(--hairline)] outline-none transition placeholder:text-faint focus:shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent)_55%,transparent),0_0_0_4px_color-mix(in_srgb,var(--accent)_14%,transparent)]"
             />
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex gap-2.5">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-2xl bg-fg/[0.06] py-3 text-[15px] font-medium text-fg/70 transition hover:bg-fg/10 active:scale-95"
+                className="btn-glass h-12 flex-1 rounded-full text-[15px] font-semibold"
               >
                 건너뛰기
               </button>
               <button
                 type="submit"
                 disabled={!note.trim()}
-                className="accent-bg flex-1 rounded-2xl py-3 text-[15px] font-semibold text-white shadow-lg transition active:scale-95 disabled:opacity-40"
+                className="btn-primary h-12 flex-1 rounded-full text-[15px] font-semibold disabled:opacity-40 disabled:shadow-none"
               >
                 저장
               </button>
             </div>
           </form>
         ) : (
-          <div className="mx-auto mt-6 h-1 w-24 overflow-hidden rounded-full bg-fg/10">
+          <div className="mx-auto mt-7 h-1 w-24 overflow-hidden rounded-full bg-fg/10">
             <div
               key={data.id}
               className="accent-bg anim-shrink h-full origin-left"

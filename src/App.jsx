@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Maximize2, NotebookPen, Pause, Play, RotateCcw, Settings2, SkipForward, Sun, Timer } from 'lucide-react'
+import { Maximize2, NotebookPen, Pause, Play, RotateCcw, Settings2, SkipForward, Sun } from 'lucide-react'
 import TimerRing from './components/TimerRing'
 import TaskList from './components/TaskList'
 import SoundPanel from './components/SoundPanel'
@@ -223,6 +223,9 @@ export default function App() {
   const interval = mergedSettings.longInterval
   const filledDots = Math.min(timer.cycle, interval)
 
+  const modeKeys = Object.keys(MODES)
+  const modeIndex = Math.max(0, modeKeys.indexOf(timer.mode))
+
   return (
     <div className="min-h-dvh">
       <div className="bg-glow" aria-hidden />
@@ -230,18 +233,19 @@ export default function App() {
       <div
         inert={zen}
         aria-hidden={zen}
-        className={`mx-auto flex min-h-dvh max-w-6xl flex-col transition-[opacity,transform,filter] duration-500 ease-out ${
-          zen ? 'pointer-events-none scale-[0.97] opacity-0 blur-sm' : ''
-        } pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] md:px-[max(2rem,env(safe-area-inset-left))]`}
+        className={`mx-auto flex min-h-dvh max-w-6xl flex-col transition-[opacity,transform,filter] duration-700 ease-[var(--ease-glide)] ${
+          zen ? 'pointer-events-none scale-[0.96] opacity-0 blur-md' : ''
+        } pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] md:px-[max(2.5rem,env(safe-area-inset-left))]`}
       >
         {/* 헤더 */}
-        <header className="app-header flex items-center justify-between py-3 md:py-5">
-          <div className="flex items-center gap-2.5">
-            <div className="accent-bg grid h-9 w-9 place-items-center rounded-xl shadow-lg">
-              <Timer className="h-5 w-5 text-white" />
-            </div>
+        <header className="app-header flex items-center justify-between py-3 md:py-6">
+          <div className="flex items-center gap-3">
+            <span aria-hidden className="relative grid h-7 w-7 place-items-center">
+              <span className="absolute inset-0 rounded-full bg-[var(--accent)] opacity-40 blur-md" />
+              <span className="accent-bg relative h-3.5 w-3.5 rounded-full shadow-[inset_0_1px_1px_rgb(255_255_255/0.6)]" />
+            </span>
             <span
-              className={`text-lg font-semibold tracking-tight max-[380px]:hidden ${timer.running ? 'max-[430px]:hidden' : ''}`}
+              className={`text-[19px] font-semibold tracking-[-0.022em] max-[380px]:hidden ${timer.running ? 'max-[430px]:hidden' : ''}`}
             >
               Pomodoro
             </span>
@@ -249,31 +253,36 @@ export default function App() {
           <div className="flex items-center gap-2">
             {wakeLockActive && (
               <span
-                className="hidden items-center gap-1 rounded-full bg-fg/[0.06] px-2.5 py-1.5 text-xs text-muted sm:flex"
+                className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-muted sm:flex"
                 title="타이머 작동 중 화면 꺼짐 방지"
               >
                 <Sun className="h-3.5 w-3.5" /> 화면 유지
               </span>
             )}
-            <span className="glass flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm">
-              <span>🍅</span>
+            <span
+              className="glass flex h-10 items-center gap-2 rounded-full px-4 text-sm"
+              title={`오늘 ${todayCount}회, ${todayMinutes}분 집중`}
+            >
+              <span aria-hidden>🍅</span>
               <span className="font-semibold tabular-nums">{todayCount}</span>
-              <span className={`text-faint ${timer.running ? 'max-[430px]:hidden' : ''}`}>· {todayMinutes}분</span>
+              <span className={`tabular-nums text-faint ${timer.running ? 'max-[430px]:hidden' : ''}`}>
+                {todayMinutes}분
+              </span>
             </span>
             <button
               onClick={() => setJournalOpen(true)}
               aria-label="일지"
               title="집중 일지"
-              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/70 transition hover:text-fg active:scale-95"
+              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/75 transition hover:text-fg active:scale-[0.94]"
             >
-              <NotebookPen className="h-[18px] w-[18px]" />
+              <NotebookPen className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             <button
               onClick={() => setSettingsOpen(true)}
               aria-label="설정"
-              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/70 transition hover:text-fg active:scale-95"
+              className="glass grid h-10 w-10 place-items-center rounded-full text-fg/75 transition hover:text-fg active:scale-[0.94]"
             >
-              <Settings2 className="h-[18px] w-[18px]" />
+              <Settings2 className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
             {/* 우측 상단: 타이머가 도는 동안 집중 모드로 다시 전환 */}
             {timer.running && (
@@ -281,7 +290,7 @@ export default function App() {
                 onClick={() => setZen(true)}
                 aria-label="집중 모드"
                 title="집중 모드 (타이머 확대)"
-                className="accent-soft accent-text anim-pop flex h-10 items-center gap-2 rounded-full border px-3 text-sm font-semibold transition active:scale-95"
+                className="accent-soft accent-text anim-pop flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-semibold transition active:scale-[0.96]"
               >
                 <Maximize2 className="h-4 w-4" />
                 <span className="hidden sm:inline">집중 모드</span>
@@ -294,18 +303,29 @@ export default function App() {
           <NotifyBanner onEnable={enableNotifications} onDismiss={() => setNotifyPromptDismissed(true)} />
         )}
 
-        <main className="app-main grid flex-1 gap-5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-6 lg:gap-8">
+        <main className="app-main grid flex-1 gap-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:gap-7 lg:gap-9">
           {/* 타이머 */}
           {/* md 이상: 오른쪽 열 길이에 맞춰 늘어나지 않도록 self-start + 스크롤 시 고정 */}
-          <section className="timer-card glass flex flex-col items-center gap-6 rounded-[2rem] px-4 py-6 sm:px-8 md:sticky md:top-6 md:self-start md:py-8">
-            {/* 모드 탭 */}
-            <div className="mode-tabs flex w-full max-w-sm rounded-2xl bg-fg/[0.05] p-1">
+          <section className="timer-card glass flex flex-col items-center gap-7 rounded-[2.5rem] px-5 pt-5 pb-8 sm:px-10 md:sticky md:top-6 md:self-start md:pt-6 md:pb-10">
+            {/* 모드 전환: Segmented control */}
+            <div
+              role="tablist"
+              aria-label="타이머 모드"
+              className="mode-tabs relative grid w-full max-w-[22rem] grid-cols-3 rounded-full bg-fg/[0.06] p-1 shadow-[inset_0_1px_2px_rgb(0_0_0/0.12)]"
+            >
+              <span
+                aria-hidden
+                className="seg-thumb absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-full transition-transform duration-500 ease-[var(--ease-spring)] motion-reduce:transition-none"
+                style={{ transform: `translateX(${modeIndex * 100}%)` }}
+              />
               {Object.entries(MODES).map(([key, m]) => (
                 <button
                   key={key}
+                  role="tab"
+                  aria-selected={timer.mode === key}
                   onClick={() => timer.switchMode(key)}
-                  className={`flex-1 rounded-xl py-2.5 text-sm font-medium transition-all duration-300 ${
-                    timer.mode === key ? 'accent-bg text-white shadow-lg' : 'text-muted hover:text-fg/80'
+                  className={`relative z-10 rounded-full py-2 text-[13px] font-semibold tracking-[-0.01em] transition-colors duration-300 sm:text-sm ${
+                    timer.mode === key ? 'text-fg' : 'text-muted hover:text-fg/80'
                   }`}
                 >
                   {m.label}
@@ -314,122 +334,128 @@ export default function App() {
             </div>
 
             {/* 현재 작업 */}
-            <div className="timer-task flex min-h-12 w-full max-w-md flex-col items-center text-center">
-              <span className="text-[11px] font-medium tracking-[0.18em] text-faint uppercase">현재 작업</span>
-              <span
-                className={`mt-1 line-clamp-2 px-2 text-base font-medium sm:text-lg ${
-                  activeTask ? 'text-fg/90' : 'text-faint'
-                }`}
-              >
-                {activeTask ? activeTask.text : '할 일 목록에서 작업을 선택하세요'}
-              </span>
-            </div>
-
-            <div className="timer-body flex flex-col items-center gap-6">
-            <TimerRing progress={timer.progress}>
-              <span className="accent-text text-sm font-semibold tracking-wide">{MODES[timer.mode].label}</span>
-              {editing ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    commitEdit()
-                  }}
-                  className="my-1 flex items-baseline gap-2"
-                >
-                  <input
-                    autoFocus
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    enterKeyHint="done"
-                    maxLength={3}
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value.replace(/\D/g, ''))}
-                    onBlur={commitEdit}
-                    onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
-                    onFocus={(e) => e.target.select()}
-                    aria-label={`${MODES[timer.mode].label} 시간(분)`}
-                    className="time-digits w-[2.6ch] border-b-2 border-[var(--accent)] bg-transparent text-center text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg outline-none md:text-[clamp(3rem,min(8vw,10dvh),7rem)]"
-                  />
-                  <span className="text-2xl font-medium text-muted">분</span>
-                </form>
-              ) : (
-                <button
-                  type="button"
-                  onClick={beginEdit}
-                  disabled={timer.running}
-                  title={timer.running ? undefined : '탭하여 시간 수정'}
-                  aria-label={timer.running ? undefined : `남은 시간 ${formatTime(timer.remaining)}, 탭하여 수정`}
-                  className="time-digits timer-digits my-1 rounded-2xl px-2 text-[clamp(4rem,19vw,6.5rem)] leading-none font-semibold text-fg transition enabled:hover:bg-fg/[0.04] enabled:active:scale-95 disabled:cursor-default md:text-[clamp(3rem,min(8vw,10dvh),7rem)]"
-                >
-                  {formatTime(timer.remaining)}
-                </button>
-              )}
-              <div className="mt-2 flex items-center gap-1.5" aria-label={`${filledDots}/${interval} 세트`}>
-                {Array.from({ length: interval }).map((_, i) => (
+            <div className="timer-task flex min-h-11 w-full max-w-md items-center justify-center px-2 text-center">
+              {activeTask ? (
+                <p className="flex min-w-0 items-center gap-2.5 text-[17px] font-medium tracking-[-0.015em] text-fg/90">
                   <span
-                    key={i}
-                    className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i < filledDots ? 'accent-bg w-4' : 'w-1.5 bg-fg/20'
-                    }`}
+                    aria-hidden
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
                   />
-                ))}
-              </div>
-              <span
-                className={`timer-hint mt-3 h-4 text-[11px] text-faint transition-opacity ${
-                  !timer.running && !editing ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                숫자를 탭해 시간 수정
-              </span>
-            </TimerRing>
+                  <span className="sr-only">현재 작업: </span>
+                  <span className="line-clamp-2">{activeTask.text}</span>
+                </p>
+              ) : (
+                <p className="text-[15px] text-faint">할 일에서 집중할 작업을 골라보세요</p>
+              )}
+            </div>
 
-            {/* 컨트롤 */}
-            <div className="timer-controls flex items-center gap-6 sm:gap-8">
-              <button
-                onClick={timer.reset}
-                aria-label="리셋"
-                className="grid h-14 w-14 place-items-center rounded-full bg-fg/[0.07] text-fg/70 transition hover:bg-fg/[0.12] hover:text-fg active:scale-90"
-              >
-                <RotateCcw className="h-[22px] w-[22px]" />
-              </button>
-              <button
-                onClick={toggleTimer}
-                aria-label={timer.running ? '일시정지' : '시작'}
-                className="play-btn accent-bg grid h-20 w-20 place-items-center rounded-full text-white shadow-[0_12px_40px_-8px_color-mix(in_srgb,var(--accent)_70%,transparent)] transition active:scale-90"
-              >
-                {timer.running ? (
-                  <Pause className="h-8 w-8" fill="currentColor" />
+            <div className="timer-body flex flex-col items-center gap-8">
+              <TimerRing progress={timer.progress}>
+                <span className="accent-text text-[13px] font-semibold tracking-[0.02em]">
+                  {MODES[timer.mode].label}
+                </span>
+                {editing ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      commitEdit()
+                    }}
+                    className="my-1 flex items-baseline gap-2"
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      enterKeyHint="done"
+                      maxLength={3}
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value.replace(/\D/g, ''))}
+                      onBlur={commitEdit}
+                      onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
+                      onFocus={(e) => e.target.select()}
+                      aria-label={`${MODES[timer.mode].label} 시간(분)`}
+                      className="time-digits w-[2.4ch] border-b border-[var(--accent)] bg-transparent text-center text-[clamp(4.25rem,20vw,7rem)] leading-none font-extralight text-fg caret-[var(--accent)] outline-none md:text-[clamp(3rem,min(8.5vw,10.5dvh),7.5rem)]"
+                    />
+                    <span className="text-2xl font-light text-muted">분</span>
+                  </form>
                 ) : (
-                  <Play className="ml-1 h-8 w-8" fill="currentColor" />
+                  <button
+                    type="button"
+                    onClick={beginEdit}
+                    disabled={timer.running}
+                    title={timer.running ? undefined : '탭하여 시간 수정'}
+                    aria-label={timer.running ? undefined : `남은 시간 ${formatTime(timer.remaining)}, 탭하여 수정`}
+                    className="time-digits timer-digits my-1 rounded-3xl px-3 text-[clamp(4.25rem,20vw,7rem)] leading-none font-extralight text-fg transition enabled:hover:bg-fg/[0.04] enabled:active:scale-[0.97] disabled:cursor-default md:text-[clamp(3rem,min(8.5vw,10.5dvh),7.5rem)]"
+                  >
+                    {formatTime(timer.remaining)}
+                  </button>
                 )}
-              </button>
-              <button
-                onClick={timer.skip}
-                aria-label="다음 세션으로 건너뛰기"
-                className="grid h-14 w-14 place-items-center rounded-full bg-fg/[0.07] text-fg/70 transition hover:bg-fg/[0.12] hover:text-fg active:scale-90"
-              >
-                <SkipForward className="h-[22px] w-[22px]" fill="currentColor" />
-              </button>
-            </div>
+                <div className="mt-3 flex items-center gap-2" aria-label={`${filledDots}/${interval} 세트`}>
+                  {Array.from({ length: interval }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 w-1.5 rounded-full transition-all duration-500 ${
+                        i < filledDots ? 'bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]' : 'bg-fg/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span
+                  className={`timer-hint mt-3 h-4 text-[11px] text-faint transition-opacity duration-500 ${
+                    !timer.running && !editing ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  숫자를 탭해 시간 수정
+                </span>
+              </TimerRing>
+
+              {/* 컨트롤 */}
+              <div className="timer-controls flex items-center gap-5 sm:gap-7">
+                <button
+                  onClick={timer.reset}
+                  aria-label="리셋"
+                  className="btn-glass grid h-[52px] w-[52px] place-items-center rounded-full"
+                >
+                  <RotateCcw className="h-5 w-5" strokeWidth={1.9} />
+                </button>
+                <button
+                  onClick={toggleTimer}
+                  aria-label={timer.running ? '일시정지' : '시작'}
+                  className="play-btn btn-primary flex h-16 min-w-[10rem] items-center justify-center gap-2.5 rounded-full px-8 text-[17px] font-semibold tracking-[-0.01em]"
+                >
+                  {timer.running ? (
+                    <Pause className="h-5 w-5" fill="currentColor" strokeWidth={0} />
+                  ) : (
+                    <Play className="h-5 w-5" fill="currentColor" strokeWidth={0} />
+                  )}
+                  <span className="play-label">{timer.running ? '일시정지' : timer.isFresh ? '시작' : '계속'}</span>
+                </button>
+                <button
+                  onClick={timer.skip}
+                  aria-label="다음 세션으로 건너뛰기"
+                  className="btn-glass grid h-[52px] w-[52px] place-items-center rounded-full"
+                >
+                  <SkipForward className="h-5 w-5" fill="currentColor" strokeWidth={1.5} />
+                </button>
+              </div>
             </div>
 
-            <p className="timer-hints hidden gap-4 text-xs text-faint [@media(hover:hover)_and_(pointer:fine)]:flex">
-              <span>
-                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">Space</kbd> 시작/정지
-              </span>
-              <span>
-                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">R</kbd> 리셋
-              </span>
-              <span>
-                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">S</kbd> 스킵
-              </span>
-              <span>
-                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">1·2·3</kbd> 모드
-              </span>
-              <span>
-                <kbd className="rounded bg-fg/10 px-1.5 py-0.5 font-sans">↑↓</kbd> ±1분
-              </span>
+            <p className="timer-hints hidden flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-faint [@media(hover:hover)_and_(pointer:fine)]:flex">
+              {[
+                ['Space', '시작/정지'],
+                ['R', '리셋'],
+                ['S', '스킵'],
+                ['1 2 3', '모드'],
+                ['↑↓', '±1분'],
+              ].map(([k, label]) => (
+                <span key={k} className="flex items-center gap-1.5">
+                  <kbd className="rounded-md bg-fg/[0.07] px-1.5 py-0.5 font-sans text-[11px] text-muted shadow-[inset_0_-1px_0_var(--hairline)]">
+                    {k}
+                  </kbd>
+                  {label}
+                </span>
+              ))}
             </p>
           </section>
 

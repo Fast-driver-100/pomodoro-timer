@@ -23,37 +23,38 @@ export default function FocusView({ visible, remaining, progress, modeLabel, onP
       <button
         onClick={onShowFull}
         aria-label="전체 화면 보기"
-        className="glass fixed top-[calc(max(0.75rem,env(safe-area-inset-top))_+_0.75rem)] right-[max(1rem,env(safe-area-inset-right))] flex h-10 items-center gap-2 rounded-full px-3.5 text-sm font-medium text-fg/80 transition hover:text-fg active:scale-95 md:right-[max(2rem,env(safe-area-inset-right))]"
+        className="glass fixed top-[calc(max(0.75rem,env(safe-area-inset-top))_+_0.75rem)] right-[max(1.25rem,env(safe-area-inset-right))] flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-fg/80 transition hover:text-fg active:scale-[0.96] md:right-[max(2.5rem,env(safe-area-inset-right))]"
       >
         <Minimize2 className="h-4 w-4" />
         전체 화면 보기
       </button>
 
       <TimerRing progress={progress} className="w-[min(84vw,64dvh,36rem)]">
-        <span className="accent-text text-[clamp(0.8rem,2.4dvh,1.1rem)] font-semibold tracking-wide">
+        <span className="accent-text text-[clamp(0.8rem,2.4dvh,1.1rem)] font-semibold tracking-[0.02em]">
           {modeLabel}
         </span>
-        <span className="time-digits mt-1 text-[min(21vw,15dvh,8.5rem)] leading-none font-semibold text-fg">
+        <span className="time-digits mt-1 text-[min(22vw,16dvh,9.5rem)] leading-none font-extralight text-fg">
           {formatTime(remaining)}
         </span>
       </TimerRing>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-5">
         <button
           onClick={onStop}
           aria-label="정지"
           title="정지 (R)"
-          className="grid h-14 w-14 place-items-center rounded-full bg-fg/[0.07] text-fg/70 transition hover:bg-fg/[0.12] hover:text-fg active:scale-90"
+          className="btn-glass grid h-[52px] w-[52px] place-items-center rounded-full"
         >
-          <Square className="h-5 w-5" fill="currentColor" />
+          <Square className="h-[18px] w-[18px]" fill="currentColor" strokeWidth={0} />
         </button>
         <button
           onClick={onPause}
           aria-label="일시정지"
           title="일시정지 (Space)"
-          className="accent-bg grid h-20 w-20 place-items-center rounded-full text-white shadow-[0_12px_40px_-8px_color-mix(in_srgb,var(--accent)_70%,transparent)] transition active:scale-90"
+          className="btn-primary flex h-16 min-w-[10rem] items-center justify-center gap-2.5 rounded-full px-8 text-[17px] font-semibold"
         >
-          <Pause className="h-8 w-8" fill="currentColor" />
+          <Pause className="h-5 w-5" fill="currentColor" strokeWidth={0} />
+          일시정지
         </button>
       </div>
     </div>

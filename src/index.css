@@ -5,6 +5,11 @@
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Apple SD Gothic Neo', 'Pretendard Variable', Pretendard,
+    'Segoe UI', system-ui, sans-serif;
+  --ease-spring: cubic-bezier(0.32, 1.25, 0.48, 1);
+  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 포인트 컬러를 타입이 있는 커스텀 프로퍼티로 등록 → 모드 전환 시 색상 자체가 부드럽게 보간됩니다 */
@@ -21,32 +26,47 @@
 
 :root {
   color-scheme: dark;
-  /* 다크(기본) — muted/faint는 투명도 대신 단색으로 지정해 대비를 보장 */
+  /* 다크(기본): 미드나잇 블랙 — muted/faint는 단색으로 지정해 대비 보장 */
   --bg: #07080c;
-  --fg: #ececf1;
-  --muted: #a3a4ad;
-  --faint: #7f808a;
-  --surface: rgb(16 17 25 / 0.92);
-  --glass-bg: rgb(255 255 255 / 0.035);
-  --glass-border: rgb(255 255 255 / 0.08);
-  --glass-hi: rgb(255 255 255 / 0.05);
-  --glass-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.7);
-  --glow-strength: 22%;
-  --accent-ink: var(--accent);
+  --fg: #f5f5f7;
+  --muted: #a1a1a8;
+  --faint: #7d7e87;
+  --surface: rgb(20 21 30 / 0.72);
+  --glass-top: rgb(255 255 255 / 0.06);
+  --glass-bottom: rgb(255 255 255 / 0.02);
+  --hairline: rgb(255 255 255 / 0.07);
+  --rim: rgb(255 255 255 / 0.22);
+  --glass-shadow: 0 40px 90px -40px rgb(0 0 0 / 0.85), 0 2px 6px -2px rgb(0 0 0 / 0.4);
+  --fill: rgb(255 255 255 / 0.065);
+  --fill-strong: rgb(255 255 255 / 0.11);
+  --group: rgb(255 255 255 / 0.045);
+  --thumb: rgb(255 255 255 / 0.15);
+  --thumb-shadow: 0 4px 14px -4px rgb(0 0 0 / 0.6);
+  --aurora: 44%;
+  --scrim: rgb(2 3 6 / 0.45);
+  --accent-ink: color-mix(in oklab, var(--accent) 82%, #fff);
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
+  /* 라이트: 프로스티드 화이트 */
   --bg: #f2f2f5;
-  --fg: #16171d;
-  --muted: #4c4e5b;
-  --faint: #63656f;
-  --surface: rgb(255 255 255 / 0.95);
-  --glass-bg: rgb(255 255 255 / 0.62);
-  --glass-border: rgb(22 23 29 / 0.08);
-  --glass-hi: rgb(255 255 255 / 0.8);
-  --glass-shadow: 0 18px 44px -22px rgb(30 32 48 / 0.28);
-  --glow-strength: 16%;
+  --fg: #1d1d1f;
+  --muted: #5d5e67;
+  --faint: #6c6d76;
+  --surface: rgb(255 255 255 / 0.8);
+  --glass-top: rgb(255 255 255 / 0.72);
+  --glass-bottom: rgb(255 255 255 / 0.48);
+  --hairline: rgb(20 22 40 / 0.07);
+  --rim: rgb(255 255 255 / 1);
+  --glass-shadow: 0 30px 70px -36px rgb(40 44 70 / 0.3), 0 1px 3px rgb(40 44 70 / 0.06);
+  --fill: rgb(20 22 40 / 0.05);
+  --fill-strong: rgb(20 22 40 / 0.085);
+  --group: rgb(255 255 255 / 0.7);
+  --thumb: #fff;
+  --thumb-shadow: 0 3px 10px -2px rgb(30 34 60 / 0.18), 0 0 0 0.5px rgb(30 34 60 / 0.06);
+  --aurora: 30%;
+  --scrim: rgb(225 227 236 / 0.35);
   /* 밝은 배경 위 포인트 텍스트는 어둡게 섞어 대비 확보 */
   --accent-ink: color-mix(in oklab, var(--accent) 62%, #000);
 }
@@ -61,9 +81,11 @@ body {
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Apple SD Gothic Neo', 'Pretendard', 'Segoe UI',
-    system-ui, sans-serif;
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -88,8 +110,8 @@ html {
   --accent: var(--focus-a);
   --accent-2: var(--focus-b);
   transition:
-    --accent 0.6s ease,
-    --accent-2 0.6s ease;
+    --accent 0.9s ease,
+    --accent-2 0.9s ease;
 }
 html[data-accent='mint'] {
   --focus-a: var(--mint-a);
@@ -112,6 +134,10 @@ html[data-mode='long'] {
   --accent-2: var(--long-b);
 }
 
+::selection {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -120,7 +146,13 @@ html[data-mode='long'] {
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(10px) scale(0.97);
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
   }
 }
 @keyframes shrink-x {
@@ -128,76 +160,215 @@ html[data-mode='long'] {
     transform: scaleX(0);
   }
 }
+@keyframes drift-a {
+  to {
+    transform: translate3d(8vmax, 6vmax, 0) scale(1.12);
+  }
+}
+@keyframes drift-b {
+  to {
+    transform: translate3d(-7vmax, -5vmax, 0) scale(0.92);
+  }
+}
 .anim-fade {
-  animation: fade-in 0.25s ease-out both;
+  animation: fade-in 0.3s ease-out both;
 }
 .anim-pop {
-  animation: pop-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation: pop-in 0.45s var(--ease-spring) both;
+}
+.anim-sheet {
+  animation: sheet-in 0.45s var(--ease-glide) both;
 }
 .anim-shrink {
   animation: shrink-x linear both;
 }
 
+/* ---------------------------------------------------------------------------
+   주변광 오로라: 포인트 컬러 두 개가 깊은 배경 위에서 천천히 번지며 떠다님
+--------------------------------------------------------------------------- */
 .bg-glow {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  overflow: hidden;
   background:
-    radial-gradient(55% 45% at 15% 0%, color-mix(in srgb, var(--accent) var(--glow-strength), transparent), transparent 70%),
-    radial-gradient(
-      45% 40% at 95% 100%,
-      color-mix(in srgb, var(--accent-2) calc(var(--glow-strength) * 0.75), transparent),
-      transparent 70%
-    ),
+    radial-gradient(60% 50% at 50% 38%, color-mix(in srgb, var(--accent) calc(var(--aurora) * 0.32), transparent), transparent 70%),
     var(--bg);
-  transition: background-color 0.6s ease;
+}
+.bg-glow::before,
+.bg-glow::after {
+  content: '';
+  position: absolute;
+  width: 75vmax;
+  height: 75vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  will-change: transform;
+}
+.bg-glow::before {
+  top: -32vmax;
+  left: -22vmax;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) var(--aurora), transparent) 0%, transparent 62%);
+  animation: drift-a 26s ease-in-out infinite alternate;
+}
+.bg-glow::after {
+  right: -28vmax;
+  bottom: -34vmax;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent-2) calc(var(--aurora) * 0.85), transparent) 0%,
+    transparent 62%
+  );
+  animation: drift-b 32s ease-in-out infinite alternate;
 }
 
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  backdrop-filter: blur(24px) saturate(140%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-hi),
-    var(--glass-shadow);
-}
+@layer components {
+  /* 다층 유리: 위→아래로 옅어지는 반투명 + 빛을 받는 1px 헤어라인 림 */
+  .glass {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(180deg, var(--glass-top), var(--glass-bottom));
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    backdrop-filter: blur(40px) saturate(180%);
+    box-shadow:
+      inset 0 0 0 1px var(--hairline),
+      var(--glass-shadow);
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      168deg,
+      var(--rim) 0%,
+      color-mix(in srgb, var(--rim) 25%, transparent) 28%,
+      transparent 55%,
+      color-mix(in srgb, var(--rim) 18%, transparent) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 
-.accent-text {
-  color: var(--accent-ink);
-}
+  /* 모달 시트: 더 불투명한 유리 */
+  .sheet {
+    position: relative;
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(50px) saturate(190%);
+    backdrop-filter: blur(50px) saturate(190%);
+    box-shadow:
+      inset 0 0 0 1px var(--hairline),
+      inset 0 1px 0 color-mix(in srgb, var(--rim) 40%, transparent),
+      0 40px 100px -30px rgb(0 0 0 / 0.55);
+  }
+  .scrim {
+    background: var(--scrim);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    backdrop-filter: blur(24px) saturate(140%);
+  }
 
-.swatch-orange {
-  background: linear-gradient(135deg, var(--orange-a), var(--orange-b));
-}
-.swatch-mint {
-  background: linear-gradient(135deg, var(--mint-a), var(--mint-b));
-}
-.swatch-purple {
-  background: linear-gradient(135deg, var(--purple-a), var(--purple-b));
-}
-.swatch-rose {
-  background: linear-gradient(135deg, var(--rose-a), var(--rose-b));
-}
+  /* 주요 버튼: 포인트 컬러 캡슐 + 위쪽 광택 + 아래쪽 내부 그림자 */
+  .btn-primary {
+    color: #fff;
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--accent) 88%, #fff) 0%,
+      var(--accent) 45%,
+      var(--accent-2) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 -3px 8px rgb(0 0 0 / 0.16),
+      0 14px 34px -14px color-mix(in srgb, var(--accent) 80%, transparent);
+    transition:
+      transform 0.25s var(--ease-spring),
+      box-shadow 0.3s ease,
+      opacity 0.2s;
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
 
-.accent-bg {
-  background-image: linear-gradient(135deg, var(--accent), var(--accent-2));
-}
+  /* 보조 버튼: 유리 위의 옅은 채움 */
+  .btn-glass {
+    background: var(--fill);
+    color: color-mix(in srgb, var(--fg) 82%, transparent);
+    box-shadow:
+      inset 0 0 0 1px var(--hairline),
+      inset 0 1px 0 color-mix(in srgb, var(--rim) 30%, transparent);
+    transition:
+      transform 0.25s var(--ease-spring),
+      background-color 0.2s,
+      color 0.2s;
+  }
+  .btn-glass:hover {
+    background: var(--fill-strong);
+    color: var(--fg);
+  }
+  .btn-glass:active {
+    transform: scale(0.94);
+  }
 
-.accent-soft {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-}
+  /* Segmented control의 미끄러지는 선택 pill */
+  .seg-thumb {
+    background: var(--thumb);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--rim) 45%, transparent),
+      var(--thumb-shadow);
+  }
 
-.time-digits {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
-  letter-spacing: -0.045em;
-}
+  /* iOS 그룹 리스트 */
+  .group-box {
+    background: var(--group);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
 
-input[type='range'] {
-  accent-color: var(--accent);
+  .accent-text {
+    color: var(--accent-ink);
+  }
+  .accent-bg {
+    background-image: linear-gradient(180deg, var(--accent), var(--accent-2));
+  }
+  .accent-soft {
+    background: color-mix(in srgb, var(--accent) 13%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .swatch-orange {
+    background: linear-gradient(160deg, var(--orange-a), var(--orange-b));
+  }
+  .swatch-mint {
+    background: linear-gradient(160deg, var(--mint-a), var(--mint-b));
+  }
+  .swatch-purple {
+    background: linear-gradient(160deg, var(--purple-a), var(--purple-b));
+  }
+  .swatch-rose {
+    background: linear-gradient(160deg, var(--rose-a), var(--rose-b));
+  }
+
+  .time-digits {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Pretendard Variable', Pretendard, system-ui,
+      sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+    letter-spacing: -0.04em;
+  }
+
+  /* 포커스 링: 키보드 사용 시에만 */
+  .focus-ring:focus-visible,
+  button:focus-visible,
+  [role='switch']:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 75%, transparent);
+    outline-offset: 2px;
+  }
 }
 
 input[type='number']::-webkit-inner-spin-button,
@@ -211,7 +382,10 @@ input[type='number']::-webkit-outer-spin-button {
     transition: none;
   }
   .anim-fade,
-  .anim-pop {
+  .anim-pop,
+  .anim-sheet,
+  .bg-glow::before,
+  .bg-glow::after {
     animation: none;
   }
 }
@@ -236,10 +410,10 @@ input[type='number']::-webkit-outer-spin-button {
     align-self: start;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    border-radius: 1.5rem;
+    border-radius: 1.75rem;
   }
   .mode-tabs button {
-    padding-block: 0.4rem;
+    padding-block: 0.35rem;
     font-size: 0.8125rem;
   }
   .timer-task,
@@ -268,5 +442,10 @@ input[type='number']::-webkit-outer-spin-button {
   .timer-controls > .play-btn {
     width: 4rem;
     height: 4rem;
+    min-width: 0;
+    padding: 0;
+  }
+  .timer-controls > .play-btn .play-label {
+    display: none;
   }
 }
